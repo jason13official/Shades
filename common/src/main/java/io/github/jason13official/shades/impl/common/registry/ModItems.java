@@ -9,6 +9,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
+import net.minecraft.world.item.equipment.ArmorMaterials;
+import net.minecraft.world.item.equipment.ArmorType;
 
 public class ModItems {
 
@@ -16,7 +18,7 @@ public class ModItems {
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
 
-    BASIC_SHADES = register("basic_shades", consumer);
+    BASIC_SHADES = register("basic_shades", new Properties().humanoidArmor(ArmorMaterials.COPPER, ArmorType.HELMET), consumer);
   }
 
   /// basic item and properties
