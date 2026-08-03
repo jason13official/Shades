@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:glass_pane",
+    "minecraft:glass_pane",
+    "minecraft:ink_sac",
+    "minecraft:paper"
+  ],
+  "result": {
+    "id": "shades:halftone_shades"
+  }
+}

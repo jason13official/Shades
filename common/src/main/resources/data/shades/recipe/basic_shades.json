@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": "minecraft:glass_pane",
+    "X": "minecraft:string"
+  },
+  "pattern": [
+    "#X#"
+  ],
+  "result": {
+    "id": "shades:basic_shades"
+  }
+}

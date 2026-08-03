@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:blasting",
+  "category": "misc",
+  "cookingtime": 100,
+  "experience": 0.3,
+  "ingredient": "shades:animated_glass_shades",
+  "result": {
+    "id": "shades:molten_glass_shades"
+  }
+}

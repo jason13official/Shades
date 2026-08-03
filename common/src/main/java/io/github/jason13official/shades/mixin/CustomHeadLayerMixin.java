@@ -73,6 +73,7 @@ public abstract class CustomHeadLayerMixin<S extends LivingEntityRenderState, M 
           ModItems.FRACTAL_SHADES,
           ModItems.ANIMATED_GLASS_SHADES,
           ModItems.MOLTEN_GLASS_SHADES,
+          ModItems.FIRE_SHADES,
           ModItems.PLASMA_SHADES);
     }
 

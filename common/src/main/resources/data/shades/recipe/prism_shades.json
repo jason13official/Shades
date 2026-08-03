@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": "minecraft:glass_pane",
+    "A": "minecraft:amethyst_shard"
+  },
+  "pattern": [
+    "#A#"
+  ],
+  "result": {
+    "id": "shades:prism_shades"
+  }
+}
