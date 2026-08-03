@@ -29,6 +29,7 @@ import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -68,6 +69,7 @@ public class ShadesClient {
   public static final Identifier GLITCH_SHADES_MARKER = Shades.identifier("glitch_shades");
   public static final Identifier RAIN_SHADES_MARKER = Shades.identifier("rain_shades");
   public static final Identifier CURSOR_SHADES_MARKER = Shades.identifier("cursor_shades");
+  public static final Identifier VERTIGO_SHADES_MARKER = Shades.identifier("vertigo_shades");
 
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
@@ -94,13 +96,14 @@ public class ShadesClient {
       GLITCH_SHADES_MARKER,
       RAIN_SHADES_MARKER,
       CURSOR_SHADES_MARKER,
+      VERTIGO_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
       "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Neon", "Kaleidoscope",
-      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Plasma");
+      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Vertigo", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -142,7 +145,8 @@ public class ShadesClient {
           Map.entry(ModItems.SONAR_SHADES, SONAR_SHADES_MARKER),
           Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER),
           Map.entry(ModItems.RAIN_SHADES, RAIN_SHADES_MARKER),
-          Map.entry(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER));
+          Map.entry(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER),
+          Map.entry(ModItems.VERTIGO_SHADES, VERTIGO_SHADES_MARKER));
     }
 
     return postEffectsByItem;
@@ -196,6 +200,10 @@ public class ShadesClient {
     }
     if (postEffectId.equals(CURSOR_SHADES_MARKER)) {
       ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.CURSOR, null, ShadesClient::buildCursorUniform);
+      return;
+    }
+    if (postEffectId.equals(VERTIGO_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.VERTIGO, null, ShadesClient::buildMotionUniform);
       return;
     }
 
@@ -290,6 +298,52 @@ public class ShadesClient {
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:cursor_config", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("CursorConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// smoothed 0..1 factors driving vertigo.fsh -> raw speed/turn are noisy per-frame, so each is
+  /// eased toward its target every frame rather than applied directly (same "ease toward a target
+  /// instead of snapping" idea as Adaptive-Armor's SprintMomentum buildup, just a plain
+  /// exponential filter here since this is purely a local visual, not synced game state)
+  private static float smoothedSpeed = 0.0f;
+  private static float smoothedTurn = 0.0f;
+  private static float previousYaw = Float.NaN;
+
+  /// pushes smoothed horizontal-speed and yaw-turn-rate factors, so vertigo.fsh can drive a
+  /// zoom blur + swirl off the player's real movement instead of GameTime
+  private static GpuBuffer buildMotionUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+
+    float rawSpeed = 0.0f;
+    float rawTurn = 0.0f;
+    if (player != null) {
+      Vec3 motion = player.getDeltaMovement();
+      rawSpeed = (float) Math.sqrt(motion.x * motion.x + motion.z * motion.z);
+
+      float yaw = player.getYRot();
+      if (!Float.isNaN(previousYaw)) {
+        rawTurn = Math.abs(Mth.wrapDegrees(yaw - previousYaw));
+      }
+      previousYaw = yaw;
+    }
+
+    smoothedSpeed += (rawSpeed - smoothedSpeed) * 0.15f;
+    smoothedTurn += (rawTurn - smoothedTurn) * 0.25f;
+
+    // normalize against roughly sprint-speed/fast-turn baselines, clamp so the shader always gets a 0..1 range
+    float speedFactor = Math.min(smoothedSpeed / 0.35f, 1.0f);
+    float turnFactor = Math.min(smoothedTurn / 15.0f, 1.0f);
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(speedFactor)
+          .putFloat(turnFactor);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:vertigo_motion_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("MotionConfig", buffer);
       return buffer;
     }
   }

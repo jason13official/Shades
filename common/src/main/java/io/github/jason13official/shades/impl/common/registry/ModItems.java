@@ -38,6 +38,7 @@ public class ModItems {
   public static Item KALEIDOSCOPE_SHADES;
   public static Item RAIN_SHADES;
   public static Item CURSOR_SHADES;
+  public static Item VERTIGO_SHADES;
   public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
@@ -65,6 +66,7 @@ public class ModItems {
     KALEIDOSCOPE_SHADES = registerShades("kaleidoscope_shades", consumer);
     RAIN_SHADES = registerShades("rain_shades", consumer);
     CURSOR_SHADES = registerShades("cursor_shades", consumer);
+    VERTIGO_SHADES = registerShades("vertigo_shades", consumer);
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 

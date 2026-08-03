@@ -97,4 +97,14 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .withUniform("CursorConfig", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// needs a custom "MotionConfig" uniform (smoothed speed/turn-rate factors), pushed fresh each
+  /// frame by `ShadesClient` from the real player's movement/yaw delta
+  public static final RenderPipeline VERTIGO = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/vertigo"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/vertigo"))
+      .withSampler("InSampler")
+      .withUniform("MotionConfig", UniformType.UNIFORM_BUFFER)
+      .build();
 }

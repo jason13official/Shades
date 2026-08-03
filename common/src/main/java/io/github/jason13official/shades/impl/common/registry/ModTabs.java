@@ -49,6 +49,7 @@ public class ModTabs {
     consumer.accept(ModItems.KALEIDOSCOPE_SHADES);
     consumer.accept(ModItems.RAIN_SHADES);
     consumer.accept(ModItems.CURSOR_SHADES);
+    consumer.accept(ModItems.VERTIGO_SHADES);
     consumer.accept(ModItems.PLASMA_SHADES);
   }
 }

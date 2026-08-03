@@ -28,6 +28,7 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.GLITCH);
       event.registerPipeline(ShadesRenderPipelines.RAIN);
       event.registerPipeline(ShadesRenderPipelines.CURSOR);
+      event.registerPipeline(ShadesRenderPipelines.VERTIGO);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {
