@@ -60,10 +60,11 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .build();
 
-  /// needs a custom "CameraRay" uniform too (unlike STATIC_TV/GLITCH) - the 4 near-plane corner
-  /// vectors from `Camera#getNearPlane`, pushed fresh each frame by `ShadesClient`, used to
-  /// reconstruct real world-space distance per pixel. Deliberately not ProjMat/ModelViewMat ->
-  /// those turned out to be stale/wrong at this point in the frame (see Key Findings)
+  /// needs a custom "CameraRay" uniform too (unlike STATIC_TV/GLITCH) - a combined
+  /// inverse-projection*view matrix + camera/ping-origin positions, pushed fresh each frame by
+  /// `ShadesClient` from real `GameRenderState` fields, used to reconstruct real world-space
+  /// position per pixel. Deliberately not ambient `ProjMat`/`ModelViewMat` -> those turned out to
+  /// be stale/wrong at this point in the frame (see Key Findings)
   public static final RenderPipeline SONAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/sonar"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
@@ -78,5 +79,22 @@ public class ShadesRenderPipelines {
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
       .withFragmentShader(Shades.identifier("core/glitch"))
       .withSampler("InSampler")
+      .build();
+
+  public static final RenderPipeline RAIN = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/rain"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/rain"))
+      .withSampler("InSampler")
+      .build();
+
+  /// needs a custom "CursorConfig" uniform (mouse UV + whether a screen is open), pushed fresh
+  /// each frame by `ShadesClient`
+  public static final RenderPipeline CURSOR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/cursor"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/cursor"))
+      .withSampler("InSampler")
+      .withUniform("CursorConfig", UniformType.UNIFORM_BUFFER)
       .build();
 }

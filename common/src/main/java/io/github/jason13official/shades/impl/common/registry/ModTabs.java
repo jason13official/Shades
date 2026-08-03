@@ -45,6 +45,10 @@ public class ModTabs {
     consumer.accept(ModItems.STATIC_SHADES);
     consumer.accept(ModItems.SONAR_SHADES);
     consumer.accept(ModItems.GLITCH_SHADES);
+    consumer.accept(ModItems.NEON_SHADES);
+    consumer.accept(ModItems.KALEIDOSCOPE_SHADES);
+    consumer.accept(ModItems.RAIN_SHADES);
+    consumer.accept(ModItems.CURSOR_SHADES);
     consumer.accept(ModItems.PLASMA_SHADES);
   }
 }

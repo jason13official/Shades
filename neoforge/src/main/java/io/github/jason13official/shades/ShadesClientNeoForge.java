@@ -26,6 +26,8 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.STATIC_TV);
       event.registerPipeline(ShadesRenderPipelines.SONAR);
       event.registerPipeline(ShadesRenderPipelines.GLITCH);
+      event.registerPipeline(ShadesRenderPipelines.RAIN);
+      event.registerPipeline(ShadesRenderPipelines.CURSOR);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {

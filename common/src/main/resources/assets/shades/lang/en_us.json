@@ -19,6 +19,10 @@
   "item.shades.static_shades": "Static Shades",
   "item.shades.sonar_shades": "Sonar Shades",
   "item.shades.glitch_shades": "Glitch Shades",
+  "item.shades.neon_shades": "Neon Shades",
+  "item.shades.kaleidoscope_shades": "Kaleidoscope Shades",
+  "item.shades.rain_shades": "Rain Shades",
+  "item.shades.cursor_shades": "Cursor Shades",
   "item.shades.plasma_shades": "Plasma Shades",
   "key.shades.cycle_prism": "Cycle Prism Shades Effect",
   "key.categories.shades": "Shades"

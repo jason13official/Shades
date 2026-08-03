@@ -5,6 +5,7 @@ import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -53,6 +54,8 @@ public class ShadesClient {
   public static final Identifier CHROMATIC_SHADES_POST_EFFECT = Shades.identifier("chromatic_shades");
   public static final Identifier XRAY_SHADES_POST_EFFECT = Shades.identifier("xray_shades");
   public static final Identifier FISHEYE_SHADES_POST_EFFECT = Shades.identifier("fisheye_shades");
+  public static final Identifier NEON_SHADES_POST_EFFECT = Shades.identifier("neon_shades");
+  public static final Identifier KALEIDOSCOPE_SHADES_POST_EFFECT = Shades.identifier("kaleidoscope_shades");
 
   /// sentinel -> plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
   /// visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad instead
@@ -63,6 +66,8 @@ public class ShadesClient {
   public static final Identifier STATIC_SHADES_MARKER = Shades.identifier("static_shades");
   public static final Identifier SONAR_SHADES_MARKER = Shades.identifier("sonar_shades");
   public static final Identifier GLITCH_SHADES_MARKER = Shades.identifier("glitch_shades");
+  public static final Identifier RAIN_SHADES_MARKER = Shades.identifier("rain_shades");
+  public static final Identifier CURSOR_SHADES_MARKER = Shades.identifier("cursor_shades");
 
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
@@ -82,16 +87,20 @@ public class ShadesClient {
       CHROMATIC_SHADES_POST_EFFECT,
       XRAY_SHADES_POST_EFFECT,
       FISHEYE_SHADES_POST_EFFECT,
+      NEON_SHADES_POST_EFFECT,
+      KALEIDOSCOPE_SHADES_POST_EFFECT,
       STATIC_SHADES_MARKER,
       SONAR_SHADES_MARKER,
       GLITCH_SHADES_MARKER,
+      RAIN_SHADES_MARKER,
+      CURSOR_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
-      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Static", "Sonar",
-      "Glitch", "Plasma");
+      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Neon", "Kaleidoscope",
+      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -127,9 +136,13 @@ public class ShadesClient {
           Map.entry(ModItems.CHROMATIC_SHADES, CHROMATIC_SHADES_POST_EFFECT),
           Map.entry(ModItems.XRAY_SHADES, XRAY_SHADES_POST_EFFECT),
           Map.entry(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT),
+          Map.entry(ModItems.NEON_SHADES, NEON_SHADES_POST_EFFECT),
+          Map.entry(ModItems.KALEIDOSCOPE_SHADES, KALEIDOSCOPE_SHADES_POST_EFFECT),
           Map.entry(ModItems.STATIC_SHADES, STATIC_SHADES_MARKER),
           Map.entry(ModItems.SONAR_SHADES, SONAR_SHADES_MARKER),
-          Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER));
+          Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER),
+          Map.entry(ModItems.RAIN_SHADES, RAIN_SHADES_MARKER),
+          Map.entry(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER));
     }
 
     return postEffectsByItem;
@@ -175,6 +188,14 @@ public class ShadesClient {
     }
     if (postEffectId.equals(GLITCH_SHADES_MARKER)) {
       ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.GLITCH, null);
+      return;
+    }
+    if (postEffectId.equals(RAIN_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.RAIN, null);
+      return;
+    }
+    if (postEffectId.equals(CURSOR_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.CURSOR, null, ShadesClient::buildCursorUniform);
       return;
     }
 
@@ -248,6 +269,27 @@ public class ShadesClient {
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:sonar_camera_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("CameraRay", buffer);
+      return buffer;
+    }
+  }
+
+  /// pushes real cursor position (normalized 0..1, texCoord-space) + whether a screen is
+  /// currently open, so cursor.fsh can ripple from the actual mouse position
+  private static GpuBuffer buildCursorUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    boolean screenOpen = mc.screen != null;
+    Window window = mc.getWindow();
+    float u = (float) (mc.mouseHandler.xpos() / window.getWidth());
+    float v = 1.0f - (float) (mc.mouseHandler.ypos() / window.getHeight());
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 32)
+          .putFloat(screenOpen ? 1.0f : 0.0f)
+          .putVec2(u, v);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:cursor_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("CursorConfig", buffer);
       return buffer;
     }
   }
