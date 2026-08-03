@@ -8,12 +8,14 @@ import io.github.jason13official.shades.impl.common.registry.ModMenus;
 import io.github.jason13official.shades.impl.common.registry.ModParticles;
 import io.github.jason13official.shades.impl.common.registry.ModTabs;
 import io.github.jason13official.shades.impl.common.registry.ModTiles;
+import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -24,6 +26,8 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 @Mod(Constants.MOD_ID)
@@ -36,6 +40,7 @@ public class ShadesNeoForge {
     EVENT_BUS = modEventBus;
 
     Shades.init();
+    setupNetworking(modEventBus);
 
     bind(Registries.BLOCK, ModBlocks::register);
     bind(Registries.ENTITY_TYPE, ModEntities::register);
@@ -62,6 +67,17 @@ public class ShadesNeoForge {
     if (FMLLoader.getCurrent().getDist() == Dist.CLIENT) {
       new ShadesClientNeoForge(EVENT_BUS);
     }
+  }
+
+  private void setupNetworking(IEventBus modEventBus) {
+
+    modEventBus.addListener((Consumer<RegisterPayloadHandlersEvent>) event -> {
+      PayloadRegistrar registrar = event.registrar(Constants.MOD_ID);
+      registrar.playToServer(
+          CyclePrismC2SPacket.TYPE,
+          CyclePrismC2SPacket.STREAM_CODEC,
+          (pkt, ctx) -> CyclePrismC2SPacket.handle(pkt, (ServerPlayer) ctx.player()));
+    });
   }
 
   public <T> void bind(ResourceKey<Registry<T>> registryKey, Consumer<BiConsumer<T, Identifier>> source) {

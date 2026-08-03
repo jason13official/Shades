@@ -9,11 +9,14 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 
 public class ShadesClientNeoForge {
 
   public ShadesClientNeoForge(final IEventBus modEventBus) {
+
+    ShadesClient.c2s = ClientPacketDistributor::sendToServer;
 
     modEventBus.addListener((Consumer<FMLClientSetupEvent>) event -> ShadesClient.init());
     modEventBus.addListener((Consumer<RegisterKeyMappingsEvent>) event -> event.register(ShadesClient.CYCLE_PRISM_KEY));

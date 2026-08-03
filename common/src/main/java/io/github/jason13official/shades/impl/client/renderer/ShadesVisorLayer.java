@@ -80,7 +80,7 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
     Item item = headItem.getItem();
 
     RenderType renderType;
-    if (ShadesClient.isPlasmaSelected(item)) {
+    if (ShadesClient.isPlasmaSelected(headItem)) {
 
       // the lens itself is the shader here; no texture fed in just the live plasma pattern
       // we could possibly separate this into two submitModel calls to have the arms on the old static entityTranslucent path,

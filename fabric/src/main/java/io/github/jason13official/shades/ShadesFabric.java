@@ -8,10 +8,13 @@ import io.github.jason13official.shades.impl.common.registry.ModMenus;
 import io.github.jason13official.shades.impl.common.registry.ModParticles;
 import io.github.jason13official.shades.impl.common.registry.ModTabs;
 import io.github.jason13official.shades.impl.common.registry.ModTiles;
+import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -27,6 +30,7 @@ public class ShadesFabric implements ModInitializer {
   public void onInitialize() {
 
     Shades.init();
+    setupNetworking();
 
     bind(BuiltInRegistries.BLOCK, ModBlocks::register);
     bind(BuiltInRegistries.ENTITY_TYPE, ModEntities::register);
@@ -44,6 +48,14 @@ public class ShadesFabric implements ModInitializer {
     });
 
     ResourceLoader.get(PackType.SERVER_DATA).registerReloadListener(Shades.identifier(Constants.MOD_ID), new ResourceReloadListener());
+  }
+
+  private void setupNetworking() {
+
+    PayloadTypeRegistry.serverboundPlay().register(CyclePrismC2SPacket.TYPE, CyclePrismC2SPacket.STREAM_CODEC);
+    ServerPlayNetworking.registerGlobalReceiver(
+        CyclePrismC2SPacket.TYPE,
+        (pkt, ctx) -> ctx.server().execute(() -> CyclePrismC2SPacket.handle(pkt, ctx.player())));
   }
 
   public <T> void bind(Registry<T> registry, Consumer<BiConsumer<T, Identifier>> source) {

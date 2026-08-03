@@ -2,10 +2,13 @@ package io.github.jason13official.shades;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
+import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
+import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -13,9 +16,11 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
 public class ShadesClient {
@@ -66,7 +71,8 @@ public class ShadesClient {
   public static final KeyMapping CYCLE_PRISM_KEY =
       new KeyMapping("key.shades.cycle_prism", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, SHADES_KEY_CATEGORY);
 
-  private static int prismCycleIndex = 1;
+  /// general purpose client-to-server packet acceptor, wired up per loader
+  public static Consumer<CustomPacketPayload> c2s;
 
   /// which vanilla-derived post-processing chain plays for which pair of glasses; filled in once
   /// ModItems is populated, since the fields aren't set yet at class-init time
@@ -104,16 +110,20 @@ public class ShadesClient {
       return;
     }
 
-    Item headItem = player.getItemBySlot(EquipmentSlot.HEAD).getItem();
+    ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
+    Item headItem = headStack.getItem();
 
     Identifier postEffectId;
     if (headItem == ModItems.PRISM_SHADES) {
 
       while (CYCLE_PRISM_KEY.consumeClick()) {
-        prismCycleIndex = (prismCycleIndex + 1) % PRISM_CYCLE.size();
+        if (c2s != null) {
+          c2s.accept(new CyclePrismC2SPacket());
+        }
       }
 
-      postEffectId = PRISM_CYCLE.get(prismCycleIndex);
+      int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
+      postEffectId = PRISM_CYCLE.get(index);
     } else {
       postEffectId = postEffectsByItem().get(headItem);
     }
@@ -132,16 +142,21 @@ public class ShadesClient {
   /// the plasma option -> used by ShadesVisorLayer/ShadesPlasmaEffect to pick the live
   /// GameTime-driven plasma RenderType instead of their normal per-item behavior.
   ///
-  /// note/ TODO: prismCycleIndex is a local-client-only field (never networked), so...
-  /// for any OTHER player wearing prism_shades this reflects OUR OWN cycle selection, not theirs,
-  /// same local-only caveat as the rest of the cycling feature until there's an actual sync layer
-  public static boolean isPlasmaSelected(Item headItem) {
+  /// takes the real head-slot stack (not just the Item) since the cycle position now lives on
+  /// [ModComponents#PRISM_CYCLE_INDEX] -> correct for other tracked players too, not just us
+  public static boolean isPlasmaSelected(ItemStack headStack) {
 
+    Item headItem = headStack.getItem();
     if (headItem == ModItems.PLASMA_SHADES) {
       return true;
     }
 
-    return headItem == ModItems.PRISM_SHADES && PLASMA_SHADES_MARKER.equals(PRISM_CYCLE.get(prismCycleIndex));
+    if (headItem != ModItems.PRISM_SHADES) {
+      return false;
+    }
+
+    int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
+    return PLASMA_SHADES_MARKER.equals(PRISM_CYCLE.get(index));
   }
 
   /// shows the current prism_shades effect name while worn, e.g. "Prism: Thermal"
@@ -152,11 +167,17 @@ public class ShadesClient {
       return;
     }
 
-    if (mc.player.getItemBySlot(EquipmentSlot.HEAD).getItem() != ModItems.PRISM_SHADES) {
+    ItemStack headStack = mc.player.getItemBySlot(EquipmentSlot.HEAD);
+    if (headStack.getItem() != ModItems.PRISM_SHADES) {
       return;
     }
 
-    String effectName = PRISM_NAMES.get(prismCycleIndex);
+    int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
+    String effectName = PRISM_NAMES.get(index);
     graphics.text(mc.font, "Prism: " + effectName, 5, 5, 0xAAFFFFFF);
+  }
+
+  public static int prismCycleSize() {
+    return PRISM_CYCLE.size();
   }
 }

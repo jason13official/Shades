@@ -38,7 +38,7 @@ public class ShadesPlasmaEffect {
 
     Minecraft mc = Minecraft.getInstance();
     LocalPlayer player = mc.player;
-    if (player == null || !ShadesClient.isPlasmaSelected(player.getItemBySlot(EquipmentSlot.HEAD).getItem())) {
+    if (player == null || !ShadesClient.isPlasmaSelected(player.getItemBySlot(EquipmentSlot.HEAD))) {
       return;
     }
 
