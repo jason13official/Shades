@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -36,25 +37,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CustomHeadLayerMixin<S extends LivingEntityRenderState, M extends EntityModel<S> & HeadedModel> {
 
   /// lazy since ModItems' fields aren't set yet at class-init time
-  private static Set<Item> shadesItems;
+  @Unique
+  private static Set<Item> shades$shadesItems;
 
-  private static Set<Item> shadesItems() {
+  @Unique
+  private static Set<Item> shades$shadesItems() {
 
-    if (shadesItems == null) {
-      shadesItems = Set.of(
+    if (shades$shadesItems == null) {
+      shades$shadesItems = Set.of(
           ModItems.BASIC_SHADES, ModItems.CREEPER_SHADES, ModItems.INVERT_SHADES, ModItems.SPIDER_SHADES, ModItems.BLUR_SHADES,
           ModItems.NIGHT_VISION_SHADES, ModItems.THERMAL_SHADES, ModItems.MATRIX_SHADES, ModItems.PRISM_SHADES);
     }
 
-    return shadesItems;
+    return shades$shadesItems;
   }
 
-  @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
+  @Inject(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;FF)V", at = @At("HEAD"), cancellable = true)
   private void shades$skipBasicShadesHeadItem(
       PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot, CallbackInfo ci) {
 
     if (state instanceof AvatarRenderState avatarState
-        && shadesItems().contains(((ShadesRenderStateExtension) avatarState).shades$getHeadSlotItem().getItem())) {
+        && shades$shadesItems().contains(((ShadesRenderStateExtension) avatarState).shades$getHeadSlotItem().getItem())) {
       ci.cancel();
     }
   }

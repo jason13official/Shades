@@ -31,7 +31,7 @@ public abstract class AvatarRendererMixin<AvatarlikeEntity extends Avatar & Clie
   }
 
   /// capture the real head-slot item straight off the entity
-  @Inject(method = "extractRenderState", at = @At("TAIL"))
+  @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V", at = @At("TAIL"))
   private void shades$captureHeadSlotItem(AvatarlikeEntity entity, AvatarRenderState state, float partialTicks, CallbackInfo ci) {
     ((ShadesRenderStateExtension) state).shades$setHeadSlotItem(entity.getItemBySlot(EquipmentSlot.HEAD).copy());
   }
