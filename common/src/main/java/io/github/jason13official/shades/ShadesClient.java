@@ -6,8 +6,10 @@ import io.github.jason13official.shades.impl.common.registry.ModItems;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
@@ -46,6 +48,11 @@ public class ShadesClient {
       HALFTONE_SHADES_POST_EFFECT,
       LEGO_SHADES_POST_EFFECT,
       FLUTED_GLASS_SHADES_POST_EFFECT);
+
+  /// display names for PRISM_CYCLE, same order/indices - shown by doHudOverlay
+  private static final List<String> PRISM_NAMES = Arrays.asList(
+      "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
+      "Receipt", "Halftone", "Lego", "Fluted Glass");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -112,5 +119,21 @@ public class ShadesClient {
     if (postChain != null) {
       postChain.process(mc.getMainRenderTarget(), resourcePool);
     }
+  }
+
+  /// shows the current prism_shades effect name while worn, e.g. "Prism: Thermal"
+  public static void doHudOverlay(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.options.hideGui || mc.player == null) {
+      return;
+    }
+
+    if (mc.player.getItemBySlot(EquipmentSlot.HEAD).getItem() != ModItems.PRISM_SHADES) {
+      return;
+    }
+
+    String effectName = PRISM_NAMES.get(prismCycleIndex);
+    graphics.text(mc.font, "Prism: " + effectName, 5, 5, 0xAAFFFFFF);
   }
 }
