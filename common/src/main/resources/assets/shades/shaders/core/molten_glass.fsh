@@ -16,9 +16,15 @@ uniform sampler2D InSampler;
 
 // real window aspect ratio, pushed fresh each frame by ShadesClient - UV space is 0..1 in both
 // axes regardless of the window's real pixel aspect, so blob distances need this correction or
-// every blob renders as a wide ellipse instead of a circle
+// every blob renders as a wide ellipse instead of a circle.
+//
+// SwayX/SwayY are a smoothed screen-space offset opposite the camera's current yaw/pitch swing
+// (see ShadesClient#buildGlassUniform) - the whole blob field visibly lags behind a camera turn
+// like it has real inertia, then eases back to center as the turn settles
 layout(std140) uniform GlassConfig {
     float Aspect;
+    float SwayX;
+    float SwayY;
 };
 
 in vec2 texCoord;
@@ -53,7 +59,9 @@ vec2 blobPos(int i, float t, out float radius) {
     float x = fract((fi + 0.5) / float(BLOB_COUNT) + sway);
     radius = 0.09 + 0.03 * (0.5 + 0.5 * sin(seed)) + 0.015 * sin(t * 0.05 + seed * 1.7);
 
-    return vec2(x, y);
+    // camera-inertia offset applied AFTER the wrap, so it's a real screen-space shift of the
+    // whole field rather than something that folds back into the per-blob column position
+    return vec2(x + SwayX, y + SwayY);
 }
 
 // classic metaball field, using the smooth Wyvill/Blinn bounded falloff (t^3, t = 1 at the blob's

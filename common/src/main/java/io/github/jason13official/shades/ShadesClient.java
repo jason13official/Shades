@@ -369,18 +369,52 @@ public class ShadesClient {
     }
   }
 
-  /// pushes the real window aspect ratio, so molten_glass.fsh's metaball field can correct its
-  /// x-distance before computing blob radii - UV space is 0..1 in both axes regardless of the
-  /// window's real pixel aspect, so an uncorrected "circle" in UV space renders as a wide ellipse
-  /// on any non-square window
+  /// smoothed yaw/pitch delta driving molten_glass.fsh's blob sway - same eased-toward-target
+  /// idea as vertigo's smoothedSpeed/smoothedTurn, kept as separate fields so switching between
+  /// vertigo_shades and molten_glass_shades (e.g. mid-Prism-cycle) can't cause one effect's
+  /// smoothing state to jump-start the other's
+  private static float smoothedSwayYaw = 0.0f;
+  private static float smoothedSwayPitch = 0.0f;
+  private static float previousGlassYaw = Float.NaN;
+  private static float previousGlassPitch = Float.NaN;
+
+  /// pushes the real window aspect ratio (see molten_glass.fsh's GlassConfig doc) plus a
+  /// smoothed screen-space sway offset opposite the direction the camera is currently swinging -
+  /// the blobs lag behind a camera turn like they've got real inertia, then drift back to center
+  /// as the turn eases off, same buildup/decay-by-easing idea as vertigo's buildMotionUniform
   private static GpuBuffer buildGlassUniform(RenderPass renderPass) {
 
-    Window window = Minecraft.getInstance().getWindow();
+    Minecraft mc = Minecraft.getInstance();
+    Window window = mc.getWindow();
     float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    LocalPlayer player = mc.player;
+    float rawYawDelta = 0.0f;
+    float rawPitchDelta = 0.0f;
+    if (player != null) {
+      float yaw = player.getYRot();
+      float pitch = player.getXRot();
+      if (!Float.isNaN(previousGlassYaw)) {
+        rawYawDelta = Mth.wrapDegrees(yaw - previousGlassYaw);
+        rawPitchDelta = pitch - previousGlassPitch;
+      }
+      previousGlassYaw = yaw;
+      previousGlassPitch = pitch;
+    }
+
+    smoothedSwayYaw += (rawYawDelta - smoothedSwayYaw) * 0.2f;
+    smoothedSwayPitch += (rawPitchDelta - smoothedSwayPitch) * 0.2f;
+
+    // negated so the blobs drift opposite the swing direction, clamped so a fast flick can't
+    // fling them off-screen
+    float swayX = Mth.clamp(-smoothedSwayYaw * 0.01f, -0.08f, 0.08f);
+    float swayY = Mth.clamp(-smoothedSwayPitch * 0.01f, -0.08f, 0.08f);
 
     try (MemoryStack stack = MemoryStack.stackPush()) {
       Std140Builder builder = Std140Builder.onStack(stack, 16)
-          .putFloat(aspect);
+          .putFloat(aspect)
+          .putFloat(swayX)
+          .putFloat(swayY);
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:glass_config", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("GlassConfig", buffer);
