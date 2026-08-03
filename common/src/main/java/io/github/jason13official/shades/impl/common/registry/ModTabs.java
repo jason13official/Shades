@@ -26,35 +26,6 @@ public class ModTabs {
   }
 
   public static void addItemsToTab(Consumer<ItemLike> consumer) {
-    consumer.accept(ModItems.BASIC_SHADES);
-    consumer.accept(ModItems.CREEPER_SHADES);
-    consumer.accept(ModItems.INVERT_SHADES);
-    consumer.accept(ModItems.SPIDER_SHADES);
-    consumer.accept(ModItems.BLUR_SHADES);
-    consumer.accept(ModItems.NIGHT_VISION_SHADES);
-    consumer.accept(ModItems.THERMAL_SHADES);
-    consumer.accept(ModItems.MATRIX_SHADES);
-    consumer.accept(ModItems.PRISM_SHADES);
-    consumer.accept(ModItems.RECEIPT_SHADES);
-    consumer.accept(ModItems.HALFTONE_SHADES);
-    consumer.accept(ModItems.LEGO_SHADES);
-    consumer.accept(ModItems.FLUTED_GLASS_SHADES);
-    consumer.accept(ModItems.CHROMATIC_SHADES);
-    consumer.accept(ModItems.XRAY_SHADES);
-    consumer.accept(ModItems.FISHEYE_SHADES);
-    consumer.accept(ModItems.STATIC_SHADES);
-    consumer.accept(ModItems.SONAR_SHADES);
-    consumer.accept(ModItems.GLITCH_SHADES);
-    consumer.accept(ModItems.NEON_SHADES);
-    consumer.accept(ModItems.KALEIDOSCOPE_SHADES);
-    consumer.accept(ModItems.RAIN_SHADES);
-    consumer.accept(ModItems.CURSOR_SHADES);
-    consumer.accept(ModItems.VERTIGO_SHADES);
-    consumer.accept(ModItems.PREDATOR_SHADES);
-    consumer.accept(ModItems.FRACTAL_SHADES);
-    consumer.accept(ModItems.ANIMATED_GLASS_SHADES);
-    consumer.accept(ModItems.MOLTEN_GLASS_SHADES);
-    consumer.accept(ModItems.FIRE_SHADES);
-    consumer.accept(ModItems.PLASMA_SHADES);
+    ModItems.allShades().forEach(consumer);
   }
 }

@@ -44,37 +44,7 @@ public abstract class CustomHeadLayerMixin<S extends LivingEntityRenderState, M 
   private static Set<Item> shades$shadesItems() {
 
     if (shades$shadesItems == null) {
-      shades$shadesItems = Set.of(
-          ModItems.BASIC_SHADES,
-          ModItems.CREEPER_SHADES,
-          ModItems.INVERT_SHADES,
-          ModItems.SPIDER_SHADES,
-          ModItems.BLUR_SHADES,
-          ModItems.NIGHT_VISION_SHADES,
-          ModItems.THERMAL_SHADES,
-          ModItems.MATRIX_SHADES,
-          ModItems.PRISM_SHADES,
-          ModItems.RECEIPT_SHADES,
-          ModItems.HALFTONE_SHADES,
-          ModItems.LEGO_SHADES,
-          ModItems.FLUTED_GLASS_SHADES,
-          ModItems.CHROMATIC_SHADES,
-          ModItems.XRAY_SHADES,
-          ModItems.FISHEYE_SHADES,
-          ModItems.STATIC_SHADES,
-          ModItems.SONAR_SHADES,
-          ModItems.GLITCH_SHADES,
-          ModItems.NEON_SHADES,
-          ModItems.KALEIDOSCOPE_SHADES,
-          ModItems.RAIN_SHADES,
-          ModItems.CURSOR_SHADES,
-          ModItems.VERTIGO_SHADES,
-          ModItems.PREDATOR_SHADES,
-          ModItems.FRACTAL_SHADES,
-          ModItems.ANIMATED_GLASS_SHADES,
-          ModItems.MOLTEN_GLASS_SHADES,
-          ModItems.FIRE_SHADES,
-          ModItems.PLASMA_SHADES);
+      shades$shadesItems = Set.copyOf(ModItems.allShades());
     }
 
     return shades$shadesItems;

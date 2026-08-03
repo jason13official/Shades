@@ -6,7 +6,6 @@ import io.github.jason13official.shades.ShadesClient;
 import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
-import java.util.Map;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -31,10 +30,6 @@ import net.minecraft.world.item.ItemStack;
 /// @see ShadesRenderStateExtension
 public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 
-  /// which lens texture renders for which pair of glasses; lazy since ModItems' fields aren't set yet
-  /// at class-init time
-  private static Map<Item, Identifier> texturesByItem;
-
   private ShadesVisorModel model;
 
   public ShadesVisorLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
@@ -42,42 +37,22 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
     this.model = new ShadesVisorModel(ShadesVisorModel.createLayer().bakeRoot());
   }
 
-  private static Map<Item, Identifier> texturesByItem() {
+  /// every item's visor texture lives at `{id}_visor.png` (same pixel mask, only fill colors
+  /// differ - see SUMMARY.md) except plasma_shades, which has no static texture at all since its
+  /// lens is the live shader itself; derives the path from [ModItems#idOf] instead of keeping a
+  /// duplicate 29-entry map in lockstep with ModItems' fields
+  private static Identifier textureFor(Item item) {
 
-    if (texturesByItem == null) {
-      texturesByItem = Map.ofEntries(
-          Map.entry(ModItems.BASIC_SHADES, Shades.identifier("textures/models/armor/basic_shades_visor.png")),
-          Map.entry(ModItems.CREEPER_SHADES, Shades.identifier("textures/models/armor/creeper_shades_visor.png")),
-          Map.entry(ModItems.INVERT_SHADES, Shades.identifier("textures/models/armor/invert_shades_visor.png")),
-          Map.entry(ModItems.SPIDER_SHADES, Shades.identifier("textures/models/armor/spider_shades_visor.png")),
-          Map.entry(ModItems.BLUR_SHADES, Shades.identifier("textures/models/armor/blur_shades_visor.png")),
-          Map.entry(ModItems.NIGHT_VISION_SHADES, Shades.identifier("textures/models/armor/night_vision_shades_visor.png")),
-          Map.entry(ModItems.THERMAL_SHADES, Shades.identifier("textures/models/armor/thermal_shades_visor.png")),
-          Map.entry(ModItems.MATRIX_SHADES, Shades.identifier("textures/models/armor/matrix_shades_visor.png")),
-          Map.entry(ModItems.PRISM_SHADES, Shades.identifier("textures/models/armor/prism_shades_visor.png")),
-          Map.entry(ModItems.RECEIPT_SHADES, Shades.identifier("textures/models/armor/receipt_shades_visor.png")),
-          Map.entry(ModItems.HALFTONE_SHADES, Shades.identifier("textures/models/armor/halftone_shades_visor.png")),
-          Map.entry(ModItems.LEGO_SHADES, Shades.identifier("textures/models/armor/lego_shades_visor.png")),
-          Map.entry(ModItems.FLUTED_GLASS_SHADES, Shades.identifier("textures/models/armor/fluted_glass_shades_visor.png")),
-          Map.entry(ModItems.CHROMATIC_SHADES, Shades.identifier("textures/models/armor/chromatic_shades_visor.png")),
-          Map.entry(ModItems.XRAY_SHADES, Shades.identifier("textures/models/armor/xray_shades_visor.png")),
-          Map.entry(ModItems.FISHEYE_SHADES, Shades.identifier("textures/models/armor/fisheye_shades_visor.png")),
-          Map.entry(ModItems.STATIC_SHADES, Shades.identifier("textures/models/armor/static_shades_visor.png")),
-          Map.entry(ModItems.SONAR_SHADES, Shades.identifier("textures/models/armor/sonar_shades_visor.png")),
-          Map.entry(ModItems.GLITCH_SHADES, Shades.identifier("textures/models/armor/glitch_shades_visor.png")),
-          Map.entry(ModItems.NEON_SHADES, Shades.identifier("textures/models/armor/neon_shades_visor.png")),
-          Map.entry(ModItems.KALEIDOSCOPE_SHADES, Shades.identifier("textures/models/armor/kaleidoscope_shades_visor.png")),
-          Map.entry(ModItems.RAIN_SHADES, Shades.identifier("textures/models/armor/rain_shades_visor.png")),
-          Map.entry(ModItems.CURSOR_SHADES, Shades.identifier("textures/models/armor/cursor_shades_visor.png")),
-          Map.entry(ModItems.VERTIGO_SHADES, Shades.identifier("textures/models/armor/vertigo_shades_visor.png")),
-          Map.entry(ModItems.PREDATOR_SHADES, Shades.identifier("textures/models/armor/predator_shades_visor.png")),
-          Map.entry(ModItems.FRACTAL_SHADES, Shades.identifier("textures/models/armor/fractal_shades_visor.png")),
-          Map.entry(ModItems.ANIMATED_GLASS_SHADES, Shades.identifier("textures/models/armor/animated_glass_shades_visor.png")),
-          Map.entry(ModItems.MOLTEN_GLASS_SHADES, Shades.identifier("textures/models/armor/molten_glass_shades_visor.png")),
-          Map.entry(ModItems.FIRE_SHADES, Shades.identifier("textures/models/armor/fire_shades_visor.png")));
+    if (item == ModItems.PLASMA_SHADES) {
+      return null;
     }
 
-    return texturesByItem;
+    String id = ModItems.idOf(item);
+    if (id == null) {
+      return null;
+    }
+
+    return Shades.identifier("textures/models/armor/" + id + "_visor.png");
   }
 
   @Override
@@ -107,7 +82,7 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
       // it has no room for, same as any RenderType built from a smaller vertex format
       renderType = ShadesRenderPipelines.plasma();
     } else {
-      Identifier texture = texturesByItem().get(item);
+      Identifier texture = textureFor(item);
       if (texture == null) {
         return;
       }

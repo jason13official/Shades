@@ -2,6 +2,7 @@ package io.github.jason13official.shades;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -15,10 +16,12 @@ import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -76,45 +79,54 @@ public class ShadesClient {
   public static final Identifier MOLTEN_GLASS_SHADES_MARKER = Shades.identifier("molten_glass_shades");
   public static final Identifier FIRE_SHADES_MARKER = Shades.identifier("fire_shades");
 
-  /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
-  private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
-      null,
-      SHADES_VISOR_POST_EFFECT,
-      CREEPER_SHADES_POST_EFFECT,
-      INVERT_SHADES_POST_EFFECT,
-      SPIDER_SHADES_POST_EFFECT,
-      BLUR_SHADES_POST_EFFECT,
-      NIGHT_VISION_SHADES_POST_EFFECT,
-      THERMAL_SHADES_POST_EFFECT,
-      MATRIX_SHADES_POST_EFFECT,
-      RECEIPT_SHADES_POST_EFFECT,
-      HALFTONE_SHADES_POST_EFFECT,
-      LEGO_SHADES_POST_EFFECT,
-      FLUTED_GLASS_SHADES_POST_EFFECT,
-      CHROMATIC_SHADES_POST_EFFECT,
-      XRAY_SHADES_POST_EFFECT,
-      FISHEYE_SHADES_POST_EFFECT,
-      NEON_SHADES_POST_EFFECT,
-      KALEIDOSCOPE_SHADES_POST_EFFECT,
-      STATIC_SHADES_MARKER,
-      SONAR_SHADES_MARKER,
-      GLITCH_SHADES_MARKER,
-      RAIN_SHADES_MARKER,
-      CURSOR_SHADES_MARKER,
-      VERTIGO_SHADES_MARKER,
-      PREDATOR_SHADES_POST_EFFECT,
-      FRACTAL_SHADES_POST_EFFECT,
-      ANIMATED_GLASS_SHADES_MARKER,
-      MOLTEN_GLASS_SHADES_MARKER,
-      FIRE_SHADES_MARKER,
-      PLASMA_SHADES_MARKER);
+  /// one entry per effect prism_shades can cycle through, in cycle order; item is `null` only for
+  /// the index-0 "off" state. Replaces what used to be two separate parallel lists (an Identifier
+  /// list and a same-order String list) kept in sync purely by matching index by hand - now a
+  /// single ordered list makes that pairing impossible to desync
+  private record Effect(Item item, Identifier id, String displayName) {}
 
-  /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
-  private static final List<String> PRISM_NAMES = Arrays.asList(
-      "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
-      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Neon", "Kaleidoscope",
-      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Vertigo", "Predator", "Fractal",
-      "Animated Glass", "Molten Glass", "Fire", "Plasma");
+  /// lazy, same reason as postEffectsByItem below: ModItems' fields aren't set yet at
+  /// ShadesClient's own class-init time, only once registration has actually run
+  private static List<Effect> effects;
+
+  private static List<Effect> effects() {
+
+    if (effects == null) {
+      effects = List.of(
+          new Effect(null, null, "Off"),
+          new Effect(ModItems.BASIC_SHADES, SHADES_VISOR_POST_EFFECT, "Basic"),
+          new Effect(ModItems.CREEPER_SHADES, CREEPER_SHADES_POST_EFFECT, "Creeper"),
+          new Effect(ModItems.INVERT_SHADES, INVERT_SHADES_POST_EFFECT, "Negative"),
+          new Effect(ModItems.SPIDER_SHADES, SPIDER_SHADES_POST_EFFECT, "Spider"),
+          new Effect(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT, "Blurry"),
+          new Effect(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT, "Night Vision"),
+          new Effect(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT, "Thermal"),
+          new Effect(ModItems.MATRIX_SHADES, MATRIX_SHADES_POST_EFFECT, "Matrix"),
+          new Effect(ModItems.RECEIPT_SHADES, RECEIPT_SHADES_POST_EFFECT, "Receipt"),
+          new Effect(ModItems.HALFTONE_SHADES, HALFTONE_SHADES_POST_EFFECT, "Halftone"),
+          new Effect(ModItems.LEGO_SHADES, LEGO_SHADES_POST_EFFECT, "Lego"),
+          new Effect(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT, "Fluted Glass"),
+          new Effect(ModItems.CHROMATIC_SHADES, CHROMATIC_SHADES_POST_EFFECT, "Chromatic"),
+          new Effect(ModItems.XRAY_SHADES, XRAY_SHADES_POST_EFFECT, "X-Ray"),
+          new Effect(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT, "Fisheye"),
+          new Effect(ModItems.NEON_SHADES, NEON_SHADES_POST_EFFECT, "Neon"),
+          new Effect(ModItems.KALEIDOSCOPE_SHADES, KALEIDOSCOPE_SHADES_POST_EFFECT, "Kaleidoscope"),
+          new Effect(ModItems.STATIC_SHADES, STATIC_SHADES_MARKER, "Static"),
+          new Effect(ModItems.SONAR_SHADES, SONAR_SHADES_MARKER, "Sonar"),
+          new Effect(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER, "Glitch"),
+          new Effect(ModItems.RAIN_SHADES, RAIN_SHADES_MARKER, "Rain"),
+          new Effect(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER, "Cursor"),
+          new Effect(ModItems.VERTIGO_SHADES, VERTIGO_SHADES_MARKER, "Vertigo"),
+          new Effect(ModItems.PREDATOR_SHADES, PREDATOR_SHADES_POST_EFFECT, "Predator"),
+          new Effect(ModItems.FRACTAL_SHADES, FRACTAL_SHADES_POST_EFFECT, "Fractal"),
+          new Effect(ModItems.ANIMATED_GLASS_SHADES, ANIMATED_GLASS_SHADES_MARKER, "Animated Glass"),
+          new Effect(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER, "Molten Glass"),
+          new Effect(ModItems.FIRE_SHADES, FIRE_SHADES_MARKER, "Fire"),
+          new Effect(ModItems.PLASMA_SHADES, PLASMA_SHADES_MARKER, "Plasma"));
+    }
+
+    return effects;
+  }
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -131,38 +143,15 @@ public class ShadesClient {
   public static void init() {
   }
 
+  /// derived from effects() -> every item except the "off" sentinel (null item) and plasma_shades
+  /// (that one's routed to the live shader lens/quad instead of a post_effect chain, see
+  /// doGameRender's PLASMA_SHADES_MARKER check)
   private static Map<Item, Identifier> postEffectsByItem() {
 
     if (postEffectsByItem == null) {
-      postEffectsByItem = Map.ofEntries(
-          Map.entry(ModItems.BASIC_SHADES, SHADES_VISOR_POST_EFFECT),
-          Map.entry(ModItems.CREEPER_SHADES, CREEPER_SHADES_POST_EFFECT),
-          Map.entry(ModItems.INVERT_SHADES, INVERT_SHADES_POST_EFFECT),
-          Map.entry(ModItems.SPIDER_SHADES, SPIDER_SHADES_POST_EFFECT),
-          Map.entry(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT),
-          Map.entry(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT),
-          Map.entry(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT),
-          Map.entry(ModItems.MATRIX_SHADES, MATRIX_SHADES_POST_EFFECT),
-          Map.entry(ModItems.RECEIPT_SHADES, RECEIPT_SHADES_POST_EFFECT),
-          Map.entry(ModItems.HALFTONE_SHADES, HALFTONE_SHADES_POST_EFFECT),
-          Map.entry(ModItems.LEGO_SHADES, LEGO_SHADES_POST_EFFECT),
-          Map.entry(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT),
-          Map.entry(ModItems.CHROMATIC_SHADES, CHROMATIC_SHADES_POST_EFFECT),
-          Map.entry(ModItems.XRAY_SHADES, XRAY_SHADES_POST_EFFECT),
-          Map.entry(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT),
-          Map.entry(ModItems.NEON_SHADES, NEON_SHADES_POST_EFFECT),
-          Map.entry(ModItems.KALEIDOSCOPE_SHADES, KALEIDOSCOPE_SHADES_POST_EFFECT),
-          Map.entry(ModItems.STATIC_SHADES, STATIC_SHADES_MARKER),
-          Map.entry(ModItems.SONAR_SHADES, SONAR_SHADES_MARKER),
-          Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER),
-          Map.entry(ModItems.RAIN_SHADES, RAIN_SHADES_MARKER),
-          Map.entry(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER),
-          Map.entry(ModItems.VERTIGO_SHADES, VERTIGO_SHADES_MARKER),
-          Map.entry(ModItems.PREDATOR_SHADES, PREDATOR_SHADES_POST_EFFECT),
-          Map.entry(ModItems.FRACTAL_SHADES, FRACTAL_SHADES_POST_EFFECT),
-          Map.entry(ModItems.ANIMATED_GLASS_SHADES, ANIMATED_GLASS_SHADES_MARKER),
-          Map.entry(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER),
-          Map.entry(ModItems.FIRE_SHADES, FIRE_SHADES_MARKER));
+      postEffectsByItem = effects().stream()
+          .filter(effect -> effect.item() != null && effect.item() != ModItems.PLASMA_SHADES)
+          .collect(Collectors.toMap(Effect::item, Effect::id));
     }
 
     return postEffectsByItem;
@@ -189,7 +178,7 @@ public class ShadesClient {
       }
 
       int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
-      postEffectId = PRISM_CYCLE.get(index);
+      postEffectId = effects().get(index).id();
     } else {
       postEffectId = postEffectsByItem().get(headItem);
     }
@@ -198,40 +187,9 @@ public class ShadesClient {
       return;
     }
 
-    if (postEffectId.equals(STATIC_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.STATIC_TV, null);
-      return;
-    }
-    if (postEffectId.equals(SONAR_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.SONAR, getSonarDepthCapture(), ShadesClient::buildSonarCameraRayUniform);
-      return;
-    }
-    if (postEffectId.equals(GLITCH_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.GLITCH, null);
-      return;
-    }
-    if (postEffectId.equals(RAIN_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.RAIN, null);
-      return;
-    }
-    if (postEffectId.equals(CURSOR_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.CURSOR, null, ShadesClient::buildCursorUniform);
-      return;
-    }
-    if (postEffectId.equals(VERTIGO_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.VERTIGO, null, ShadesClient::buildMotionUniform);
-      return;
-    }
-    if (postEffectId.equals(ANIMATED_GLASS_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.ANIMATED_GLASS, null);
-      return;
-    }
-    if (postEffectId.equals(MOLTEN_GLASS_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.MOLTEN_GLASS, null, ShadesClient::buildGlassUniform);
-      return;
-    }
-    if (postEffectId.equals(FIRE_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.FIRE, null, ShadesClient::buildFireUniform);
+    LiveEffect liveEffect = liveEffects().get(postEffectId);
+    if (liveEffect != null) {
+      ShadesLiveVision.process(resourcePool, liveEffect.pipeline(), liveEffect.depth().get(), liveEffect.extraUniforms());
       return;
     }
 
@@ -239,6 +197,32 @@ public class ShadesClient {
     if (postChain != null) {
       postChain.process(mc.getMainRenderTarget(), resourcePool);
     }
+  }
+
+  /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels' doc comment) ->
+  /// `depth` is a Supplier since sonar_shades' depth capture is refreshed every frame
+  /// (getSonarDepthCapture()) rather than a fixed value; `extraUniforms` mirrors
+  /// ShadesLiveVision#process's own optional hook, `null` where an effect needs no custom uniform
+  private record LiveEffect(RenderPipeline pipeline, Supplier<GpuTextureView> depth, Function<RenderPass, GpuBuffer> extraUniforms) {}
+
+  private static Map<Identifier, LiveEffect> liveEffects;
+
+  private static Map<Identifier, LiveEffect> liveEffects() {
+
+    if (liveEffects == null) {
+      liveEffects = Map.ofEntries(
+          Map.entry(STATIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.STATIC_TV, () -> null, null)),
+          Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getSonarDepthCapture, ShadesClient::buildSonarCameraRayUniform)),
+          Map.entry(GLITCH_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GLITCH, () -> null, null)),
+          Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, null)),
+          Map.entry(CURSOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.CURSOR, () -> null, ShadesClient::buildCursorUniform)),
+          Map.entry(VERTIGO_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VERTIGO, () -> null, ShadesClient::buildMotionUniform)),
+          Map.entry(ANIMATED_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ANIMATED_GLASS, () -> null, null)),
+          Map.entry(MOLTEN_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MOLTEN_GLASS, () -> null, ShadesClient::buildGlassUniform)),
+          Map.entry(FIRE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FIRE, () -> null, ShadesClient::buildFireUniform)));
+    }
+
+    return liveEffects;
   }
 
   /// persistent (not scratch-pool) copy of the real depth buffer, refreshed via
@@ -464,7 +448,7 @@ public class ShadesClient {
     }
 
     int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
-    return PLASMA_SHADES_MARKER.equals(PRISM_CYCLE.get(index));
+    return PLASMA_SHADES_MARKER.equals(effects().get(index).id());
   }
 
   /// shows the current prism_shades effect name while worn, e.g. "Prism: Thermal"
@@ -481,11 +465,11 @@ public class ShadesClient {
     }
 
     int index = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
-    String effectName = PRISM_NAMES.get(index);
+    String effectName = effects().get(index).displayName();
     graphics.text(mc.font, "Prism: " + effectName, 5, 5, 0xAAFFFFFF);
   }
 
   public static int prismCycleSize() {
-    return PRISM_CYCLE.size();
+    return effects().size();
   }
 }

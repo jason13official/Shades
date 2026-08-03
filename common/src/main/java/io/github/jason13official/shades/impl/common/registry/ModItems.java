@@ -1,6 +1,10 @@
 package io.github.jason13official.shades.impl.common.registry;
 
 import io.github.jason13official.shades.Shades;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,15 +84,35 @@ public class ModItems {
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 
+  /// every item registered via [#registerShades] below, in registration order -> single choke
+  /// point so ModTabs/CustomHeadLayerMixin don't each need their own duplicate 29-item list
+  private static final List<Item> ALL_SHADES = new ArrayList<>();
+
+  /// each item's own registered id string, keyed back from the Item -> lets ShadesVisorLayer
+  /// derive `{id}_visor.png` texture paths instead of keeping a duplicate 29-entry map
+  private static final Map<Item, String> IDS_BY_ITEM = new LinkedHashMap<>();
+
   /// no ArmorMaterial/asset -> own visor cosmetic (client renderer) is the only thing rendered on the head,
   /// and ShadesClient#doGameRender picks a post-processing chain per item once worn
   private static Item registerShades(String id, BiConsumer<Item, Identifier> consumer) {
 
-    return register(id,
+    Item item = register(id,
         new Properties()
             .stacksTo(1)
             .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build()),
         consumer);
+
+    ALL_SHADES.add(item);
+    IDS_BY_ITEM.put(item, id);
+    return item;
+  }
+
+  public static List<Item> allShades() {
+    return ALL_SHADES;
+  }
+
+  public static String idOf(Item item) {
+    return IDS_BY_ITEM.get(item);
   }
 
   /// basic item and properties
