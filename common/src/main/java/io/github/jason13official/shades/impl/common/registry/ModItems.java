@@ -16,12 +16,25 @@ import net.minecraft.world.item.equipment.Equippable;
 public class ModItems {
 
   public static Item BASIC_SHADES;
+  public static Item CREEPER_SHADES;
+  public static Item INVERT_SHADES;
+  public static Item SPIDER_SHADES;
+  public static Item BLUR_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
 
-    // no ArmorMaterial/asset;
-    // own visor cosmetic (GameRendererMixin + client renderer) is the only thing rendered on the head
-    BASIC_SHADES = register("basic_shades",
+    BASIC_SHADES = registerShades("basic_shades", consumer);
+    CREEPER_SHADES = registerShades("creeper_shades", consumer);
+    INVERT_SHADES = registerShades("invert_shades", consumer);
+    SPIDER_SHADES = registerShades("spider_shades", consumer);
+    BLUR_SHADES = registerShades("blur_shades", consumer);
+  }
+
+  /// no ArmorMaterial/asset -> own visor cosmetic (client renderer) is the only thing rendered on the head,
+  /// and ShadesClient#doGameRender picks a post-processing chain per item once worn
+  private static Item registerShades(String id, BiConsumer<Item, Identifier> consumer) {
+
+    return register(id,
         new Properties()
             .stacksTo(1)
             .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build()),

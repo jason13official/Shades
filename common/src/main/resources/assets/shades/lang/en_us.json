@@ -1,3 +1,7 @@
 {
-  "item.shades.basic_shades": "Basic Shades"
+  "item.shades.basic_shades": "Basic Shades",
+  "item.shades.creeper_shades": "Creeper Shades",
+  "item.shades.invert_shades": "Negative Shades",
+  "item.shades.spider_shades": "Spider Shades",
+  "item.shades.blur_shades": "Blurry Shades"
 }

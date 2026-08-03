@@ -1,6 +1,10 @@
 {
   "replace": false,
   "values": [
-    "shades:basic_shades"
+    "shades:basic_shades",
+    "shades:creeper_shades",
+    "shades:invert_shades",
+    "shades:spider_shades",
+    "shades:blur_shades"
   ]
 }
