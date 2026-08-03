@@ -39,5 +39,6 @@ public class ModTabs {
     consumer.accept(ModItems.HALFTONE_SHADES);
     consumer.accept(ModItems.LEGO_SHADES);
     consumer.accept(ModItems.FLUTED_GLASS_SHADES);
+    consumer.accept(ModItems.PLASMA_SHADES);
   }
 }
