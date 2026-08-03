@@ -37,6 +37,9 @@ public class ShadesClient {
   public static final Identifier HALFTONE_SHADES_POST_EFFECT = Shades.identifier("halftone_shades");
   public static final Identifier LEGO_SHADES_POST_EFFECT = Shades.identifier("lego_shades");
   public static final Identifier FLUTED_GLASS_SHADES_POST_EFFECT = Shades.identifier("fluted_glass_shades");
+  public static final Identifier CHROMATIC_SHADES_POST_EFFECT = Shades.identifier("chromatic_shades");
+  public static final Identifier XRAY_SHADES_POST_EFFECT = Shades.identifier("xray_shades");
+  public static final Identifier FISHEYE_SHADES_POST_EFFECT = Shades.identifier("fisheye_shades");
 
   /// sentinel value for PRISM_CYCLE/postEffectsByItem() - plasma_shades doesn't go through the
   /// PostChain/post_effect system at all (see ShadesRenderPipelines for why), so there's no real
@@ -59,12 +62,15 @@ public class ShadesClient {
       HALFTONE_SHADES_POST_EFFECT,
       LEGO_SHADES_POST_EFFECT,
       FLUTED_GLASS_SHADES_POST_EFFECT,
+      CHROMATIC_SHADES_POST_EFFECT,
+      XRAY_SHADES_POST_EFFECT,
+      FISHEYE_SHADES_POST_EFFECT,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices - shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
-      "Receipt", "Halftone", "Lego", "Fluted Glass", "Plasma");
+      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -96,7 +102,10 @@ public class ShadesClient {
           Map.entry(ModItems.RECEIPT_SHADES, RECEIPT_SHADES_POST_EFFECT),
           Map.entry(ModItems.HALFTONE_SHADES, HALFTONE_SHADES_POST_EFFECT),
           Map.entry(ModItems.LEGO_SHADES, LEGO_SHADES_POST_EFFECT),
-          Map.entry(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT));
+          Map.entry(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT),
+          Map.entry(ModItems.CHROMATIC_SHADES, CHROMATIC_SHADES_POST_EFFECT),
+          Map.entry(ModItems.XRAY_SHADES, XRAY_SHADES_POST_EFFECT),
+          Map.entry(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT));
     }
 
     return postEffectsByItem;

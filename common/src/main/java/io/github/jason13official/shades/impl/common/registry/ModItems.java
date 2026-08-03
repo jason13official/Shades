@@ -28,6 +28,9 @@ public class ModItems {
   public static Item HALFTONE_SHADES;
   public static Item LEGO_SHADES;
   public static Item FLUTED_GLASS_SHADES;
+  public static Item CHROMATIC_SHADES;
+  public static Item XRAY_SHADES;
+  public static Item FISHEYE_SHADES;
   public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
@@ -45,6 +48,9 @@ public class ModItems {
     HALFTONE_SHADES = registerShades("halftone_shades", consumer);
     LEGO_SHADES = registerShades("lego_shades", consumer);
     FLUTED_GLASS_SHADES = registerShades("fluted_glass_shades", consumer);
+    CHROMATIC_SHADES = registerShades("chromatic_shades", consumer);
+    XRAY_SHADES = registerShades("xray_shades", consumer);
+    FISHEYE_SHADES = registerShades("fisheye_shades", consumer);
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 
