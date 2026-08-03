@@ -34,10 +34,10 @@ public class ShadesVisorModel extends HumanoidModel<AvatarRenderState> {
     // temple arms hug the sides of the head, wrapping from the lens back toward the ears
     head.addOrReplaceChild("shades_arm_right",
         CubeListBuilder.create().texOffs(0, 4)
-            .addBox(-5.0F, -4.0F, -3.5F, 1.0F, 2.0F, 3.0F, CubeDeformation.NONE), PartPose.ZERO);
+            .addBox(-5.0F, -4.0F, -3.5F, 1.0F, 2.0F, 3.0F, new CubeDeformation(0.01f)), PartPose.ZERO);
     head.addOrReplaceChild("shades_arm_left",
         CubeListBuilder.create().texOffs(9, 4)
-            .addBox(4.0F, -4.0F, -3.5F, 1.0F, 2.0F, 3.0F, CubeDeformation.NONE), PartPose.ZERO);
+            .addBox(4.0F, -4.0F, -3.5F, 1.0F, 2.0F, 3.0F, new CubeDeformation(0.01f)), PartPose.ZERO);
 
     return LayerDefinition.create(mesh, 32, 16);
   }
