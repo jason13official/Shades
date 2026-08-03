@@ -157,7 +157,9 @@ void main(){
     vec3 churn = plasmaColor(distortedUV * 4.0, t * 1.3);
     hot = mix(hot, hot * (0.6 + churn * 0.8), 0.3 * heat);
 
-    vec3 blended = mix(scene, hot, heat);
+    // capped below 1.0 so even a blob's own white-hot core stays translucent instead of a flat
+    // opaque cutout - heat itself (uncapped) still drives the color ramp, just not the opacity
+    vec3 blended = mix(scene, hot, heat * 0.8);
 
     // an approximate lens normal, pointing away from the dominant blob's center, scaled by how
     // dominant it is - good enough for a specular glint without needing a real analytic gradient
