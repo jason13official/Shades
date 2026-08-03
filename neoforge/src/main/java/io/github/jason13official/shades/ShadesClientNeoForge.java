@@ -31,6 +31,7 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.VERTIGO);
       event.registerPipeline(ShadesRenderPipelines.ANIMATED_GLASS);
       event.registerPipeline(ShadesRenderPipelines.MOLTEN_GLASS);
+      event.registerPipeline(ShadesRenderPipelines.FIRE);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {

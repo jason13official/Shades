@@ -73,7 +73,8 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
           Map.entry(ModItems.PREDATOR_SHADES, Shades.identifier("textures/models/armor/predator_shades_visor.png")),
           Map.entry(ModItems.FRACTAL_SHADES, Shades.identifier("textures/models/armor/fractal_shades_visor.png")),
           Map.entry(ModItems.ANIMATED_GLASS_SHADES, Shades.identifier("textures/models/armor/animated_glass_shades_visor.png")),
-          Map.entry(ModItems.MOLTEN_GLASS_SHADES, Shades.identifier("textures/models/armor/molten_glass_shades_visor.png")));
+          Map.entry(ModItems.MOLTEN_GLASS_SHADES, Shades.identifier("textures/models/armor/molten_glass_shades_visor.png")),
+          Map.entry(ModItems.FIRE_SHADES, Shades.identifier("textures/models/armor/fire_shades_visor.png")));
     }
 
     return texturesByItem;

@@ -127,4 +127,15 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .withUniform("GlassConfig", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// domain-warped fractal-sine fire field - needs a "FireConfig" uniform (real window aspect
+  /// ratio) so the flame pattern isn't stretched on a non-square window, pushed fresh each frame
+  /// by ShadesClient
+  public static final RenderPipeline FIRE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/fire"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/fire"))
+      .withSampler("InSampler")
+      .withUniform("FireConfig", UniformType.UNIFORM_BUFFER)
+      .build();
 }

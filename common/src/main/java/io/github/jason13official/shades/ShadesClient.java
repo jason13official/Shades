@@ -74,6 +74,7 @@ public class ShadesClient {
   public static final Identifier VERTIGO_SHADES_MARKER = Shades.identifier("vertigo_shades");
   public static final Identifier ANIMATED_GLASS_SHADES_MARKER = Shades.identifier("animated_glass_shades");
   public static final Identifier MOLTEN_GLASS_SHADES_MARKER = Shades.identifier("molten_glass_shades");
+  public static final Identifier FIRE_SHADES_MARKER = Shades.identifier("fire_shades");
 
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
@@ -105,6 +106,7 @@ public class ShadesClient {
       FRACTAL_SHADES_POST_EFFECT,
       ANIMATED_GLASS_SHADES_MARKER,
       MOLTEN_GLASS_SHADES_MARKER,
+      FIRE_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
@@ -112,7 +114,7 @@ public class ShadesClient {
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
       "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Neon", "Kaleidoscope",
       "Static", "Sonar", "Glitch", "Rain", "Cursor", "Vertigo", "Predator", "Fractal",
-      "Animated Glass", "Molten Glass", "Plasma");
+      "Animated Glass", "Molten Glass", "Fire", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -159,7 +161,8 @@ public class ShadesClient {
           Map.entry(ModItems.PREDATOR_SHADES, PREDATOR_SHADES_POST_EFFECT),
           Map.entry(ModItems.FRACTAL_SHADES, FRACTAL_SHADES_POST_EFFECT),
           Map.entry(ModItems.ANIMATED_GLASS_SHADES, ANIMATED_GLASS_SHADES_MARKER),
-          Map.entry(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER));
+          Map.entry(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER),
+          Map.entry(ModItems.FIRE_SHADES, FIRE_SHADES_MARKER));
     }
 
     return postEffectsByItem;
@@ -225,6 +228,10 @@ public class ShadesClient {
     }
     if (postEffectId.equals(MOLTEN_GLASS_SHADES_MARKER)) {
       ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.MOLTEN_GLASS, null, ShadesClient::buildGlassUniform);
+      return;
+    }
+    if (postEffectId.equals(FIRE_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.FIRE, null, ShadesClient::buildFireUniform);
       return;
     }
 
@@ -418,6 +425,23 @@ public class ShadesClient {
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:glass_config", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("GlassConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// pushes the real window aspect ratio, so fire.fsh's virtual-space sampling isn't stretched on
+  /// a non-square window - no sway/other state needed, unlike molten_glass's GlassConfig
+  private static GpuBuffer buildFireUniform(RenderPass renderPass) {
+
+    Window window = Minecraft.getInstance().getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:fire_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("FireConfig", buffer);
       return buffer;
     }
   }

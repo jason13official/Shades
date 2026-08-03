@@ -54,6 +54,7 @@ public class ModTabs {
     consumer.accept(ModItems.FRACTAL_SHADES);
     consumer.accept(ModItems.ANIMATED_GLASS_SHADES);
     consumer.accept(ModItems.MOLTEN_GLASS_SHADES);
+    consumer.accept(ModItems.FIRE_SHADES);
     consumer.accept(ModItems.PLASMA_SHADES);
   }
 }
