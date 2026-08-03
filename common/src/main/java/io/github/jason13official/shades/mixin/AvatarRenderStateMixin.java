@@ -1,6 +1,6 @@
 package io.github.jason13official.shades.mixin;
 
-import io.github.jason13official.shades.impl.client.renderer.ShadesRenderStateExtension;
+import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;

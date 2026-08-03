@@ -2,6 +2,7 @@ package io.github.jason13official.shades.impl.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.jason13official.shades.Shades;
+import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import java.util.Map;
 import net.minecraft.client.model.player.PlayerModel;

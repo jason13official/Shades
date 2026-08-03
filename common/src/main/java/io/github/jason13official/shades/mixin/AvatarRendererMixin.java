@@ -1,6 +1,6 @@
 package io.github.jason13official.shades.mixin;
 
-import io.github.jason13official.shades.impl.client.renderer.ShadesRenderStateExtension;
+import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import io.github.jason13official.shades.impl.client.renderer.ShadesVisorLayer;
 import net.minecraft.client.entity.ClientAvatarEntity;
 import net.minecraft.client.model.player.PlayerModel;

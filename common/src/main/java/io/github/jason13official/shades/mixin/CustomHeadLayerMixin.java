@@ -1,7 +1,7 @@
 package io.github.jason13official.shades.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.jason13official.shades.impl.client.renderer.ShadesRenderStateExtension;
+import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import java.util.Set;
 import net.minecraft.client.model.EntityModel;

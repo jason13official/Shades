@@ -1,4 +1,4 @@
-package io.github.jason13official.shades.impl.client.renderer;
+package io.github.jason13official.shades.api.client.renderer;
 
 import net.minecraft.world.item.ItemStack;
 
