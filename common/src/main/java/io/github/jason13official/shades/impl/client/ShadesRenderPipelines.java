@@ -5,6 +5,7 @@ import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import io.github.jason13official.shades.Shades;
@@ -59,12 +60,17 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .build();
 
+  /// needs a custom "CameraRay" uniform too (unlike STATIC_TV/GLITCH) - the 4 near-plane corner
+  /// vectors from `Camera#getNearPlane`, pushed fresh each frame by `ShadesClient`, used to
+  /// reconstruct real world-space distance per pixel. Deliberately not ProjMat/ModelViewMat ->
+  /// those turned out to be stale/wrong at this point in the frame (see Key Findings)
   public static final RenderPipeline SONAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/sonar"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
       .withFragmentShader(Shades.identifier("core/sonar"))
       .withSampler("InSampler")
       .withSampler("InDepthSampler")
+      .withUniform("CameraRay", UniformType.UNIFORM_BUFFER)
       .build();
 
   public static final RenderPipeline GLITCH = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)

@@ -1,7 +1,14 @@
 package io.github.jason13official.shades;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import io.github.jason13official.shades.impl.client.ShadesLiveVision;
 import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModComponents;
@@ -18,12 +25,16 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryStack;
 
 public class ShadesClient {
 
@@ -43,17 +54,12 @@ public class ShadesClient {
   public static final Identifier XRAY_SHADES_POST_EFFECT = Shades.identifier("xray_shades");
   public static final Identifier FISHEYE_SHADES_POST_EFFECT = Shades.identifier("fisheye_shades");
 
-  /// sentinel value for PRISM_CYCLE/postEffectsByItem() - plasma_shades doesn't go through the
-  /// PostChain/post_effect system at all (see ShadesRenderPipelines for why), so there's no real
-  /// post_effect JSON behind this id. doGameRender recognizes it and skips PostChain processing;
-  /// the actual visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad
+  /// sentinel -> plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
+  /// visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad instead
   public static final Identifier PLASMA_SHADES_MARKER = Shades.identifier("plasma_shades");
 
-  /// sentinel values for PRISM_CYCLE/postEffectsByItem(), same idea as PLASMA_SHADES_MARKER but
-  /// still driven by doGameRender itself rather than a separate quad - these need live GameTime
-  /// (noise/rings/tears that animate), which real post_effect JSON structurally can't provide
-  /// (see Key Findings in NOTES.md), so doGameRender routes them to ShadesLiveVision's hand-rolled
-  /// pass instead of PostChain when it sees one of these ids
+  /// sentinels for items needing live GameTime (post_effect JSON can't provide it) -> doGameRender
+  /// routes these to ShadesLiveVision's hand-rolled pass instead of PostChain
   public static final Identifier STATIC_SHADES_MARKER = Shades.identifier("static_shades");
   public static final Identifier SONAR_SHADES_MARKER = Shades.identifier("sonar_shades");
   public static final Identifier GLITCH_SHADES_MARKER = Shades.identifier("glitch_shades");
@@ -81,7 +87,7 @@ public class ShadesClient {
       GLITCH_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
-  /// display names for PRISM_CYCLE, same order/indices - shown by doHudOverlay
+  /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
       "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Static", "Sonar",
@@ -160,21 +166,89 @@ public class ShadesClient {
     }
 
     if (postEffectId.equals(STATIC_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.STATIC_TV, false);
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.STATIC_TV, null);
       return;
     }
     if (postEffectId.equals(SONAR_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.SONAR, true);
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.SONAR, getSonarDepthCapture(), ShadesClient::buildSonarCameraRayUniform);
       return;
     }
     if (postEffectId.equals(GLITCH_SHADES_MARKER)) {
-      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.GLITCH, false);
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.GLITCH, null);
       return;
     }
 
     PostChain postChain = mc.getShaderManager().getPostChain(postEffectId, LevelTargetBundle.MAIN_TARGETS);
     if (postChain != null) {
       postChain.process(mc.getMainRenderTarget(), resourcePool);
+    }
+  }
+
+  /// persistent (not scratch-pool) copy of the real depth buffer, refreshed via
+  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -
+  /// see that mixin's doc comment for why mainTarget's own depth can't be read directly by the
+  /// time doGameRender runs later in the same frame
+  private static RenderTarget sonarDepthCapture;
+
+  public static void captureWorldDepth() {
+
+    Minecraft mc = Minecraft.getInstance();
+    RenderTarget mainTarget = mc.getMainRenderTarget();
+    if (!mainTarget.useDepth) {
+      return;
+    }
+
+    if (sonarDepthCapture == null || sonarDepthCapture.width != mainTarget.width || sonarDepthCapture.height != mainTarget.height) {
+      if (sonarDepthCapture != null) {
+        sonarDepthCapture.destroyBuffers();
+      }
+      sonarDepthCapture = new TextureTarget(null, mainTarget.width, mainTarget.height, true);
+    }
+
+    RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(
+        mainTarget.getDepthTexture(), sonarDepthCapture.getDepthTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);
+  }
+
+  private static GpuTextureView getSonarDepthCapture() {
+    return sonarDepthCapture != null ? sonarDepthCapture.getDepthTextureView() : null;
+  }
+
+  /// world position the sonar ping currently expands from -> re-anchored once per ping cycle (see
+  /// buildSonarCameraRayUniform) instead of sliding with the player every frame, same "propagate
+  /// from a fixed point" idea orbital_railgun uses for its strike position
+  private static Vec3 sonarPingOrigin;
+  private static long sonarPingCycle = -1;
+
+  /// pushes a combined inverse-projection*view matrix + camera position + ping origin, so
+  /// sonar.fsh can reconstruct real world-space position per pixel (same `worldPos()` technique
+  /// orbital_railgun's strike.fsh uses) and measure real distance from a fixed point in the world
+  private static GpuBuffer buildSonarCameraRayUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+    CameraRenderState cameraState = mc.gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
+
+    Matrix4f inverseTransform = new Matrix4f(cameraState.projectionMatrix).mul(cameraState.viewRotationMatrix).invert();
+    Vec3 cameraPos = cameraState.pos;
+
+    // ~8.3 real seconds per full sweep (matches sonar.fsh's `t * 0.06` phase) -> re-anchor the
+    // origin only when a new cycle starts, so the ring stays fixed in the world for its sweep
+    // instead of tracking the player's live position every frame
+    long cycle = player != null ? (long) Math.floor((player.level().getGameTime() % 24000) * 0.006) : 0;
+    if (sonarPingOrigin == null || cycle != sonarPingCycle) {
+      sonarPingOrigin = player != null ? player.getEyePosition() : cameraPos;
+      sonarPingCycle = cycle;
+    }
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 96)
+          .putMat4f(inverseTransform)
+          .putVec3((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z)
+          .putVec3((float) sonarPingOrigin.x, (float) sonarPingOrigin.y, (float) sonarPingOrigin.z);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:sonar_camera_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("CameraRay", buffer);
+      return buffer;
     }
   }
 
