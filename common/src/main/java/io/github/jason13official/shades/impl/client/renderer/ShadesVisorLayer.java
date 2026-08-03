@@ -2,6 +2,7 @@ package io.github.jason13official.shades.impl.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.jason13official.shades.Shades;
+import io.github.jason13official.shades.ShadesClient;
 import io.github.jason13official.shades.api.client.renderer.ShadesRenderStateExtension;
 import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
@@ -79,7 +80,7 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
     Item item = headItem.getItem();
 
     RenderType renderType;
-    if (item == ModItems.PLASMA_SHADES) {
+    if (ShadesClient.isPlasmaSelected(item)) {
 
       // the lens itself is the shader here; no texture fed in just the live plasma pattern
       // we could possibly separate this into two submitModel calls to have the arms on the old static entityTranslucent path,

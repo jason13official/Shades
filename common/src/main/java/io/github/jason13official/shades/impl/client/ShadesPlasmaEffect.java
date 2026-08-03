@@ -1,7 +1,7 @@
 package io.github.jason13official.shades.impl.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.jason13official.shades.impl.common.registry.ModItems;
+import io.github.jason13official.shades.ShadesClient;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -10,8 +10,9 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.phys.Vec3;
 
 /// a translucent, GameTime-animated quad covering the camera's own near clip plane whenever
-/// plasma_shades is worn -> the "cheat" for a full-screen-looking effect the `post_effect` system
-/// structurally can't give us.
+/// plasma_shades is worn, or prism_shades is worn and cycled to the Plasma option (see
+/// ShadesClient#isPlasmaSelected); this is the "cheat" for a full-screen-looking effect the
+/// `post_effect` system structurally can't give us.
 ///
 /// Anchored to the CAMERA itself (via Camera#getNearPlane,
 /// sized to the player's actual FOV setting) rather than the player's eyes,
@@ -37,7 +38,7 @@ public class ShadesPlasmaEffect {
 
     Minecraft mc = Minecraft.getInstance();
     LocalPlayer player = mc.player;
-    if (player == null || player.getItemBySlot(EquipmentSlot.HEAD).getItem() != ModItems.PLASMA_SHADES) {
+    if (player == null || !ShadesClient.isPlasmaSelected(player.getItemBySlot(EquipmentSlot.HEAD).getItem())) {
       return;
     }
 

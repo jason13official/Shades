@@ -33,6 +33,12 @@ public class ShadesClient {
   public static final Identifier LEGO_SHADES_POST_EFFECT = Shades.identifier("lego_shades");
   public static final Identifier FLUTED_GLASS_SHADES_POST_EFFECT = Shades.identifier("fluted_glass_shades");
 
+  /// sentinel value for PRISM_CYCLE/postEffectsByItem() - plasma_shades doesn't go through the
+  /// PostChain/post_effect system at all (see ShadesRenderPipelines for why), so there's no real
+  /// post_effect JSON behind this id. doGameRender recognizes it and skips PostChain processing;
+  /// the actual visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad
+  public static final Identifier PLASMA_SHADES_MARKER = Shades.identifier("plasma_shades");
+
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
       null,
@@ -47,12 +53,13 @@ public class ShadesClient {
       RECEIPT_SHADES_POST_EFFECT,
       HALFTONE_SHADES_POST_EFFECT,
       LEGO_SHADES_POST_EFFECT,
-      FLUTED_GLASS_SHADES_POST_EFFECT);
+      FLUTED_GLASS_SHADES_POST_EFFECT,
+      PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices - shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
-      "Receipt", "Halftone", "Lego", "Fluted Glass");
+      "Receipt", "Halftone", "Lego", "Fluted Glass", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -111,7 +118,7 @@ public class ShadesClient {
       postEffectId = postEffectsByItem().get(headItem);
     }
 
-    if (postEffectId == null) {
+    if (postEffectId == null || postEffectId.equals(PLASMA_SHADES_MARKER)) {
       return;
     }
 
@@ -119,6 +126,22 @@ public class ShadesClient {
     if (postChain != null) {
       postChain.process(mc.getMainRenderTarget(), resourcePool);
     }
+  }
+
+  /// true when plasma_shades is worn directly, OR prism_shades is worn and currently cycled to
+  /// the plasma option -> used by ShadesVisorLayer/ShadesPlasmaEffect to pick the live
+  /// GameTime-driven plasma RenderType instead of their normal per-item behavior.
+  ///
+  /// note/ TODO: prismCycleIndex is a local-client-only field (never networked), so...
+  /// for any OTHER player wearing prism_shades this reflects OUR OWN cycle selection, not theirs,
+  /// same local-only caveat as the rest of the cycling feature until there's an actual sync layer
+  public static boolean isPlasmaSelected(Item headItem) {
+
+    if (headItem == ModItems.PLASMA_SHADES) {
+      return true;
+    }
+
+    return headItem == ModItems.PRISM_SHADES && PLASMA_SHADES_MARKER.equals(PRISM_CYCLE.get(prismCycleIndex));
   }
 
   /// shows the current prism_shades effect name while worn, e.g. "Prism: Thermal"
