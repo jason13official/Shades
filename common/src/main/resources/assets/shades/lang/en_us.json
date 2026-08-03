@@ -1,7 +1,14 @@
 {
+  "itemGroup.shades": "Shades",
   "item.shades.basic_shades": "Basic Shades",
   "item.shades.creeper_shades": "Creeper Shades",
   "item.shades.invert_shades": "Negative Shades",
   "item.shades.spider_shades": "Spider Shades",
-  "item.shades.blur_shades": "Blurry Shades"
+  "item.shades.blur_shades": "Blurry Shades",
+  "item.shades.night_vision_shades": "Night Vision Shades",
+  "item.shades.thermal_shades": "Thermal Shades",
+  "item.shades.matrix_shades": "Matrix Shades",
+  "item.shades.prism_shades": "Prism Shades",
+  "key.shades.cycle_prism": "Cycle Prism Shades Effect",
+  "key.categories.shades": "Shades"
 }

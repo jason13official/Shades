@@ -23,6 +23,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 @Mod(Constants.MOD_ID)
@@ -34,6 +35,8 @@ public class ShadesNeoForge {
 
     EVENT_BUS = modEventBus;
 
+    Shades.init();
+
     bind(Registries.BLOCK, ModBlocks::register);
     bind(Registries.ENTITY_TYPE, ModEntities::register);
     bind(Registries.ITEM, ModItems::register);
@@ -42,7 +45,14 @@ public class ShadesNeoForge {
     bind(Registries.MENU, ModMenus::register);
     bind(Registries.CREATIVE_MODE_TAB, ModTabs::register);
 
-    EVENT_BUS.addListener((Consumer<FMLCommonSetupEvent>) event -> Shades.init());
+    // stub for stuff that must happen after game objects are registered
+    // EVENT_BUS.addListener((Consumer<FMLCommonSetupEvent>) event -> {});
+
+    EVENT_BUS.addListener((Consumer<BuildCreativeModeTabContentsEvent>) event -> {
+      if (event.getTab().equals(ModTabs.SHADES)) {
+        Shades.addItemsToTab(event::accept);
+      }
+    });
 
     NeoForge.EVENT_BUS.addListener((Consumer<AddServerReloadListenersEvent>) event -> {
       event.addListener(Shades.identifier(Constants.MOD_ID), new ResourceReloadListener());

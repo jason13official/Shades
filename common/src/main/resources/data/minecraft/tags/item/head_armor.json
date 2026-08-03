@@ -5,6 +5,10 @@
     "shades:creeper_shades",
     "shades:invert_shades",
     "shades:spider_shades",
-    "shades:blur_shades"
+    "shades:blur_shades",
+    "shades:night_vision_shades",
+    "shades:thermal_shades",
+    "shades:matrix_shades",
+    "shades:prism_shades"
   ]
 }

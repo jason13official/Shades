@@ -10,6 +10,9 @@ import io.github.jason13official.shades.impl.common.registry.ModTiles;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.fabric.impl.creativetab.FabricCreativeModeTabImpl;
 import net.fabricmc.fabric.impl.resource.DataResourceLoaderImpl;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -24,6 +27,8 @@ public class ShadesFabric implements ModInitializer {
   @Override
   public void onInitialize() {
 
+    Shades.init();
+
     bind(BuiltInRegistries.BLOCK, ModBlocks::register);
     bind(BuiltInRegistries.ENTITY_TYPE, ModEntities::register);
     bind(BuiltInRegistries.ITEM, ModItems::register);
@@ -32,9 +37,13 @@ public class ShadesFabric implements ModInitializer {
     bind(BuiltInRegistries.MENU, ModMenus::register);
     bind(BuiltInRegistries.CREATIVE_MODE_TAB, ModTabs::register);
 
-    Shades.init();
+    CreativeModeTabEvents.MODIFY_OUTPUT_ALL.register((tab, output) -> {
+      if (tab.equals(ModTabs.SHADES)) {
+        Shades.addItemsToTab(output::accept);
+      }
+    });
 
-    DataResourceLoaderImpl.get(PackType.SERVER_DATA).registerReloadListener(Shades.identifier(Constants.MOD_ID), new ResourceReloadListener());
+    ResourceLoader.get(PackType.SERVER_DATA).registerReloadListener(Shades.identifier(Constants.MOD_ID), new ResourceReloadListener());
   }
 
   public <T> void bind(Registry<T> registry, Consumer<BiConsumer<T, Identifier>> source) {

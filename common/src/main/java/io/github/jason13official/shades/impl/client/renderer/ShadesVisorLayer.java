@@ -41,12 +41,16 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
   private static Map<Item, Identifier> texturesByItem() {
 
     if (texturesByItem == null) {
-      texturesByItem = Map.of(
-          ModItems.BASIC_SHADES, Shades.identifier("textures/models/armor/basic_shades_visor.png"),
-          ModItems.CREEPER_SHADES, Shades.identifier("textures/models/armor/creeper_shades_visor.png"),
-          ModItems.INVERT_SHADES, Shades.identifier("textures/models/armor/invert_shades_visor.png"),
-          ModItems.SPIDER_SHADES, Shades.identifier("textures/models/armor/spider_shades_visor.png"),
-          ModItems.BLUR_SHADES, Shades.identifier("textures/models/armor/blur_shades_visor.png"));
+      texturesByItem = Map.ofEntries(
+          Map.entry(ModItems.BASIC_SHADES, Shades.identifier("textures/models/armor/basic_shades_visor.png")),
+          Map.entry(ModItems.CREEPER_SHADES, Shades.identifier("textures/models/armor/creeper_shades_visor.png")),
+          Map.entry(ModItems.INVERT_SHADES, Shades.identifier("textures/models/armor/invert_shades_visor.png")),
+          Map.entry(ModItems.SPIDER_SHADES, Shades.identifier("textures/models/armor/spider_shades_visor.png")),
+          Map.entry(ModItems.BLUR_SHADES, Shades.identifier("textures/models/armor/blur_shades_visor.png")),
+          Map.entry(ModItems.NIGHT_VISION_SHADES, Shades.identifier("textures/models/armor/night_vision_shades_visor.png")),
+          Map.entry(ModItems.THERMAL_SHADES, Shades.identifier("textures/models/armor/thermal_shades_visor.png")),
+          Map.entry(ModItems.MATRIX_SHADES, Shades.identifier("textures/models/armor/matrix_shades_visor.png")),
+          Map.entry(ModItems.PRISM_SHADES, Shades.identifier("textures/models/armor/prism_shades_visor.png")));
     }
 
     return texturesByItem;
