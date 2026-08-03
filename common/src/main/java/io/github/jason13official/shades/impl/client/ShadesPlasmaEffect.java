@@ -8,24 +8,30 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3fc;
 
-/// a translucent, GameTime-animated quad billboarded just in front of the local player's face
-/// whenever plasma_shades is worn.
+/// a translucent, GameTime-animated quad covering the camera's own near clip plane whenever
+/// plasma_shades is worn -> the "cheat" for a full-screen-looking effect the `post_effect` system
+/// structurally can't give us.
 ///
-/// In first person it's close enough to fill most of the view,
-/// the "cheat" for getting a full-screen-looking effect without the post_effect system's
-/// baked-uniform limitation (see ShadesRenderPipelines).
+/// Anchored to the CAMERA itself (via Camera#getNearPlane,
+/// sized to the player's actual FOV setting) rather than the player's eyes,
+/// so it fills the view the same way in first person, third-person back, AND third-person
+/// front/selfie mode; same as every other pair of glasses' real post-processing effect does in
+/// every camera mode, just achieved through real world-space geometry instead of a post pass.
 ///
-/// In third person it just reads as a glowing translucent pane hovering in front
-/// of the face, which is a fine look for "shades" too.
+/// `ShadesVisorLayer` still separately renders the actual worn lens model too (using this same
+/// `ShadesRenderPipelines.plasma()` RenderType) - that's what OTHER players see on us; this quad
+/// only ever exists relative to OUR OWN camera, so it's invisible from anyone else's viewpoint.
 ///
-/// Local player only; extending this to other visible players wearing the item would
-/// mean iterating level.entitiesForRendering() instead of just `Minecraft.getInstance().player`
+/// Local player only; extending this to other visible players wouldn't make sense here anyway -
+/// you only ever look through your own camera
+/// @see ShadesRenderPipelines
 public class ShadesPlasmaEffect {
 
-  private static final float HALF_SIZE = 0.9F; // half-width/height of the quad, in blocks
-  private static final float DISTANCE = 0.35F; // how far in front of the eyes to place it
+  // slightly past the true near plane so the quad doesn't sit exactly on the clip boundary;
+  // scaling forward/left/up together like this keeps the same angular size (still fills the
+  // exact same portion of the screen), just a bit further from the camera
+  private static final float NEAR_PLANE_PUSH = 1.15F;
 
   public static void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
 
@@ -35,41 +41,24 @@ public class ShadesPlasmaEffect {
       return;
     }
 
-    float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-    Vec3 eyePos = player.getEyePosition(partialTick);
-    Vec3 lookVec = player.getViewVector(partialTick);
-    Vec3 center = eyePos.add(lookVec.scale(DISTANCE));
-
-    // billboard basis straight from the camera, same technique as Thaumatic's FXShatterStar -
-    // guarantees the quad always faces the viewer, whether that's us in first person or someone
-    // watching us in third person
     Camera camera = mc.gameRenderer.getMainCamera();
-    Vec3 camPos = camera.position();
-    Vector3fc left = camera.leftVector();
-    Vector3fc up = camera.upVector();
+    Camera.NearPlane nearPlane = camera.getNearPlane(mc.options.fov().get());
 
-    float rx = -left.x();
-    float ry = -left.y();
-    float rz = -left.z(); // right = -left
-    float ux = up.x();
-    float uy = up.y();
-    float uz = up.z();
-
-    // world position expressed relative to the camera - level-render geometry is always
-    // submitted this way to avoid floating point precision loss far from the origin
-    float cx = (float) (center.x - camPos.x);
-    float cy = (float) (center.y - camPos.y);
-    float cz = (float) (center.z - camPos.z);
+    // these are camera-relative offsets already (not world positions) - exactly the space
+    // level-render geometry is submitted in, no further translation needed
+    Vec3 topLeft = nearPlane.getTopLeft().scale(NEAR_PLANE_PUSH);
+    Vec3 topRight = nearPlane.getTopRight().scale(NEAR_PLANE_PUSH);
+    Vec3 bottomLeft = nearPlane.getBottomLeft().scale(NEAR_PLANE_PUSH);
+    Vec3 bottomRight = nearPlane.getBottomRight().scale(NEAR_PLANE_PUSH);
 
     submitNodeCollector.submitCustomGeometry(poseStack, ShadesRenderPipelines.plasma(), (pose, buffer) -> {
-      float hs = HALF_SIZE;
-      buffer.addVertex(pose, cx - rx * hs + ux * hs, cy - ry * hs + uy * hs, cz - rz * hs + uz * hs)
+      buffer.addVertex(pose, (float) topLeft.x, (float) topLeft.y, (float) topLeft.z)
           .setUv(0.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-      buffer.addVertex(pose, cx - rx * hs - ux * hs, cy - ry * hs - uy * hs, cz - rz * hs - uz * hs)
+      buffer.addVertex(pose, (float) bottomLeft.x, (float) bottomLeft.y, (float) bottomLeft.z)
           .setUv(0.0F, 1.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-      buffer.addVertex(pose, cx + rx * hs - ux * hs, cy + ry * hs - uy * hs, cz + rz * hs - uz * hs)
+      buffer.addVertex(pose, (float) bottomRight.x, (float) bottomRight.y, (float) bottomRight.z)
           .setUv(1.0F, 1.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-      buffer.addVertex(pose, cx + rx * hs + ux * hs, cy + ry * hs + uy * hs, cz + rz * hs + uz * hs)
+      buffer.addVertex(pose, (float) topRight.x, (float) topRight.y, (float) topRight.z)
           .setUv(1.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
     });
   }
