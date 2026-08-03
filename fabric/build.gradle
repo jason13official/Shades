@@ -11,6 +11,9 @@ dependencies {
     implementation 'com.electronwill.night-config:toml:3.6.0'
     include 'com.electronwill.night-config:core:3.6.0'
     include 'com.electronwill.night-config:toml:3.6.0'
+
+    implementation "curse.maven:forge-config-api-port-547434:8218664"
+    implementation "curse.maven:shoulder-surfing-reloaded-243190:8445148"
 }
 
 loom {

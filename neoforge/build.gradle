@@ -3,6 +3,11 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+dependencies {
+
+  implementation "curse.maven:shoulder-surfing-reloaded-243190:8445147"
+}
+
 neoForge {
     version = neoforge_version
     // Automatically enable neoforge AccessTransformers if the file exists

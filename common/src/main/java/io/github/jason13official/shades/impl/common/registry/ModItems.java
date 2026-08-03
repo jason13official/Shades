@@ -4,13 +4,14 @@ import io.github.jason13official.shades.Shades;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
-import net.minecraft.world.item.equipment.ArmorMaterials;
-import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.item.equipment.Equippable;
 
 public class ModItems {
 
@@ -18,7 +19,13 @@ public class ModItems {
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
 
-    BASIC_SHADES = register("basic_shades", new Properties().humanoidArmor(ArmorMaterials.COPPER, ArmorType.HELMET), consumer);
+    // no ArmorMaterial/asset;
+    // own visor cosmetic (GameRendererMixin + client renderer) is the only thing rendered on the head
+    BASIC_SHADES = register("basic_shades",
+        new Properties()
+            .stacksTo(1)
+            .component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build()),
+        consumer);
   }
 
   /// basic item and properties
