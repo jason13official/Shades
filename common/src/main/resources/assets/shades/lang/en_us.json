@@ -16,6 +16,9 @@
   "item.shades.chromatic_shades": "Chromatic Shades",
   "item.shades.xray_shades": "X-Ray Shades",
   "item.shades.fisheye_shades": "Fisheye Shades",
+  "item.shades.static_shades": "Static Shades",
+  "item.shades.sonar_shades": "Sonar Shades",
+  "item.shades.glitch_shades": "Glitch Shades",
   "item.shades.plasma_shades": "Plasma Shades",
   "key.shades.cycle_prism": "Cycle Prism Shades Effect",
   "key.categories.shades": "Shades"

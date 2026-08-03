@@ -2,6 +2,8 @@ package io.github.jason13official.shades;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
+import io.github.jason13official.shades.impl.client.ShadesLiveVision;
+import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
@@ -47,6 +49,15 @@ public class ShadesClient {
   /// the actual visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad
   public static final Identifier PLASMA_SHADES_MARKER = Shades.identifier("plasma_shades");
 
+  /// sentinel values for PRISM_CYCLE/postEffectsByItem(), same idea as PLASMA_SHADES_MARKER but
+  /// still driven by doGameRender itself rather than a separate quad - these need live GameTime
+  /// (noise/rings/tears that animate), which real post_effect JSON structurally can't provide
+  /// (see Key Findings in NOTES.md), so doGameRender routes them to ShadesLiveVision's hand-rolled
+  /// pass instead of PostChain when it sees one of these ids
+  public static final Identifier STATIC_SHADES_MARKER = Shades.identifier("static_shades");
+  public static final Identifier SONAR_SHADES_MARKER = Shades.identifier("sonar_shades");
+  public static final Identifier GLITCH_SHADES_MARKER = Shades.identifier("glitch_shades");
+
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
       null,
@@ -65,12 +76,16 @@ public class ShadesClient {
       CHROMATIC_SHADES_POST_EFFECT,
       XRAY_SHADES_POST_EFFECT,
       FISHEYE_SHADES_POST_EFFECT,
+      STATIC_SHADES_MARKER,
+      SONAR_SHADES_MARKER,
+      GLITCH_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices - shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
-      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Plasma");
+      "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Static", "Sonar",
+      "Glitch", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -105,7 +120,10 @@ public class ShadesClient {
           Map.entry(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT),
           Map.entry(ModItems.CHROMATIC_SHADES, CHROMATIC_SHADES_POST_EFFECT),
           Map.entry(ModItems.XRAY_SHADES, XRAY_SHADES_POST_EFFECT),
-          Map.entry(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT));
+          Map.entry(ModItems.FISHEYE_SHADES, FISHEYE_SHADES_POST_EFFECT),
+          Map.entry(ModItems.STATIC_SHADES, STATIC_SHADES_MARKER),
+          Map.entry(ModItems.SONAR_SHADES, SONAR_SHADES_MARKER),
+          Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER));
     }
 
     return postEffectsByItem;
@@ -138,6 +156,19 @@ public class ShadesClient {
     }
 
     if (postEffectId == null || postEffectId.equals(PLASMA_SHADES_MARKER)) {
+      return;
+    }
+
+    if (postEffectId.equals(STATIC_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.STATIC_TV, false);
+      return;
+    }
+    if (postEffectId.equals(SONAR_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.SONAR, true);
+      return;
+    }
+    if (postEffectId.equals(GLITCH_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.GLITCH, false);
       return;
     }
 

@@ -21,7 +21,12 @@ public class ShadesClientNeoForge {
     modEventBus.addListener((Consumer<FMLClientSetupEvent>) event -> ShadesClient.init());
     modEventBus.addListener((Consumer<RegisterKeyMappingsEvent>) event -> event.register(ShadesClient.CYCLE_PRISM_KEY));
     modEventBus.addListener((Consumer<RegisterGuiLayersEvent>) event -> event.registerAboveAll(Shades.identifier("prism_overlay"), ShadesClient::doHudOverlay));
-    modEventBus.addListener((Consumer<RegisterRenderPipelinesEvent>) event -> event.registerPipeline(ShadesRenderPipelines.PLASMA));
+    modEventBus.addListener((Consumer<RegisterRenderPipelinesEvent>) event -> {
+      event.registerPipeline(ShadesRenderPipelines.PLASMA);
+      event.registerPipeline(ShadesRenderPipelines.STATIC_TV);
+      event.registerPipeline(ShadesRenderPipelines.SONAR);
+      event.registerPipeline(ShadesRenderPipelines.GLITCH);
+    });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {
       ShadesPlasmaEffect.submit(event.getPoseStack(), event.getSubmitNodeCollector());
