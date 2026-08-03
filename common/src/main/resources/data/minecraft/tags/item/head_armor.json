@@ -13,6 +13,7 @@
     "shades:receipt_shades",
     "shades:halftone_shades",
     "shades:lego_shades",
-    "shades:fluted_glass_shades"
+    "shades:fluted_glass_shades",
+    "shades:plasma_shades"
   ]
 }

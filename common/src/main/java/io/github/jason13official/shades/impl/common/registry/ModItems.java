@@ -28,6 +28,7 @@ public class ModItems {
   public static Item HALFTONE_SHADES;
   public static Item LEGO_SHADES;
   public static Item FLUTED_GLASS_SHADES;
+  public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
 
@@ -44,6 +45,7 @@ public class ModItems {
     HALFTONE_SHADES = registerShades("halftone_shades", consumer);
     LEGO_SHADES = registerShades("lego_shades", consumer);
     FLUTED_GLASS_SHADES = registerShades("fluted_glass_shades", consumer);
+    PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 
   /// no ArmorMaterial/asset -> own visor cosmetic (client renderer) is the only thing rendered on the head,

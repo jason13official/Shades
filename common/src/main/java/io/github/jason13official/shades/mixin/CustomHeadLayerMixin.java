@@ -47,7 +47,8 @@ public abstract class CustomHeadLayerMixin<S extends LivingEntityRenderState, M 
       shades$shadesItems = Set.of(
           ModItems.BASIC_SHADES, ModItems.CREEPER_SHADES, ModItems.INVERT_SHADES, ModItems.SPIDER_SHADES, ModItems.BLUR_SHADES,
           ModItems.NIGHT_VISION_SHADES, ModItems.THERMAL_SHADES, ModItems.MATRIX_SHADES, ModItems.PRISM_SHADES,
-          ModItems.RECEIPT_SHADES, ModItems.HALFTONE_SHADES, ModItems.LEGO_SHADES, ModItems.FLUTED_GLASS_SHADES);
+          ModItems.RECEIPT_SHADES, ModItems.HALFTONE_SHADES, ModItems.LEGO_SHADES, ModItems.FLUTED_GLASS_SHADES,
+          ModItems.PLASMA_SHADES);
     }
 
     return shades$shadesItems;
