@@ -1,6 +1,7 @@
 package io.github.jason13official.shades;
 
 import io.github.jason13official.shades.impl.common.registry.ModBlocks;
+import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModEntities;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import io.github.jason13official.shades.impl.common.registry.ModMenus;
@@ -43,6 +44,7 @@ public class ShadesNeoForge {
     bind(Registries.BLOCK_ENTITY_TYPE, ModTiles::register);
     bind(Registries.MENU, ModMenus::register);
     bind(Registries.CREATIVE_MODE_TAB, ModTabs::register);
+    bind(Registries.DATA_COMPONENT_TYPE, ModComponents::register);
 
     // stub for stuff that must happen after game objects are registered
     // EVENT_BUS.addListener((Consumer<FMLCommonSetupEvent>) event -> {});

@@ -1,6 +1,7 @@
 package io.github.jason13official.shades;
 
 import io.github.jason13official.shades.impl.common.registry.ModBlocks;
+import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModEntities;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import io.github.jason13official.shades.impl.common.registry.ModMenus;
@@ -34,6 +35,7 @@ public class ShadesFabric implements ModInitializer {
     bind(BuiltInRegistries.BLOCK_ENTITY_TYPE, ModTiles::register);
     bind(BuiltInRegistries.MENU, ModMenus::register);
     bind(BuiltInRegistries.CREATIVE_MODE_TAB, ModTabs::register);
+    bind(BuiltInRegistries.DATA_COMPONENT_TYPE, ModComponents::register);
 
     CreativeModeTabEvents.MODIFY_OUTPUT_ALL.register((tab, output) -> {
       if (tab.equals(ModTabs.SHADES)) {
