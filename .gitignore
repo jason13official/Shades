@@ -22,3 +22,7 @@ build
 eclipse
 run
 runs
+
+# TODO revert when readme is cleaned
+_archive
+*.md
