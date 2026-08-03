@@ -107,4 +107,24 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .withUniform("MotionConfig", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// fluted_glass_vision's refraction trick, live so the ridges can actually scroll/shimmer with
+  /// GameTime instead of being frozen at load-time phase
+  public static final RenderPipeline ANIMATED_GLASS = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/animated_glass"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/animated_glass"))
+      .withSampler("InSampler")
+      .build();
+
+  /// lava-lamp metaball field, refracted around its own blobs instead of a fixed ridge pattern -
+  /// needs a "GlassConfig" uniform (real window aspect ratio) so the blobs render as true circles
+  /// instead of stretched ellipses, pushed fresh each frame by ShadesClient
+  public static final RenderPipeline MOLTEN_GLASS = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/molten_glass"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/molten_glass"))
+      .withSampler("InSampler")
+      .withUniform("GlassConfig", UniformType.UNIFORM_BUFFER)
+      .build();
 }

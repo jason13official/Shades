@@ -50,6 +50,10 @@ public class ModTabs {
     consumer.accept(ModItems.RAIN_SHADES);
     consumer.accept(ModItems.CURSOR_SHADES);
     consumer.accept(ModItems.VERTIGO_SHADES);
+    consumer.accept(ModItems.PREDATOR_SHADES);
+    consumer.accept(ModItems.FRACTAL_SHADES);
+    consumer.accept(ModItems.ANIMATED_GLASS_SHADES);
+    consumer.accept(ModItems.MOLTEN_GLASS_SHADES);
     consumer.accept(ModItems.PLASMA_SHADES);
   }
 }

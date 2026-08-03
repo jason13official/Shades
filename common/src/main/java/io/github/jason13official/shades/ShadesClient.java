@@ -57,6 +57,8 @@ public class ShadesClient {
   public static final Identifier FISHEYE_SHADES_POST_EFFECT = Shades.identifier("fisheye_shades");
   public static final Identifier NEON_SHADES_POST_EFFECT = Shades.identifier("neon_shades");
   public static final Identifier KALEIDOSCOPE_SHADES_POST_EFFECT = Shades.identifier("kaleidoscope_shades");
+  public static final Identifier PREDATOR_SHADES_POST_EFFECT = Shades.identifier("predator_shades");
+  public static final Identifier FRACTAL_SHADES_POST_EFFECT = Shades.identifier("fractal_shades");
 
   /// sentinel -> plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
   /// visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad instead
@@ -70,6 +72,8 @@ public class ShadesClient {
   public static final Identifier RAIN_SHADES_MARKER = Shades.identifier("rain_shades");
   public static final Identifier CURSOR_SHADES_MARKER = Shades.identifier("cursor_shades");
   public static final Identifier VERTIGO_SHADES_MARKER = Shades.identifier("vertigo_shades");
+  public static final Identifier ANIMATED_GLASS_SHADES_MARKER = Shades.identifier("animated_glass_shades");
+  public static final Identifier MOLTEN_GLASS_SHADES_MARKER = Shades.identifier("molten_glass_shades");
 
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
@@ -97,13 +101,18 @@ public class ShadesClient {
       RAIN_SHADES_MARKER,
       CURSOR_SHADES_MARKER,
       VERTIGO_SHADES_MARKER,
+      PREDATOR_SHADES_POST_EFFECT,
+      FRACTAL_SHADES_POST_EFFECT,
+      ANIMATED_GLASS_SHADES_MARKER,
+      MOLTEN_GLASS_SHADES_MARKER,
       PLASMA_SHADES_MARKER);
 
   /// display names for PRISM_CYCLE, same order/indices -> shown by doHudOverlay
   private static final List<String> PRISM_NAMES = Arrays.asList(
       "Off", "Basic", "Creeper", "Negative", "Spider", "Blurry", "Night Vision", "Thermal", "Matrix",
       "Receipt", "Halftone", "Lego", "Fluted Glass", "Chromatic", "X-Ray", "Fisheye", "Neon", "Kaleidoscope",
-      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Vertigo", "Plasma");
+      "Static", "Sonar", "Glitch", "Rain", "Cursor", "Vertigo", "Predator", "Fractal",
+      "Animated Glass", "Molten Glass", "Plasma");
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -146,7 +155,11 @@ public class ShadesClient {
           Map.entry(ModItems.GLITCH_SHADES, GLITCH_SHADES_MARKER),
           Map.entry(ModItems.RAIN_SHADES, RAIN_SHADES_MARKER),
           Map.entry(ModItems.CURSOR_SHADES, CURSOR_SHADES_MARKER),
-          Map.entry(ModItems.VERTIGO_SHADES, VERTIGO_SHADES_MARKER));
+          Map.entry(ModItems.VERTIGO_SHADES, VERTIGO_SHADES_MARKER),
+          Map.entry(ModItems.PREDATOR_SHADES, PREDATOR_SHADES_POST_EFFECT),
+          Map.entry(ModItems.FRACTAL_SHADES, FRACTAL_SHADES_POST_EFFECT),
+          Map.entry(ModItems.ANIMATED_GLASS_SHADES, ANIMATED_GLASS_SHADES_MARKER),
+          Map.entry(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER));
     }
 
     return postEffectsByItem;
@@ -204,6 +217,14 @@ public class ShadesClient {
     }
     if (postEffectId.equals(VERTIGO_SHADES_MARKER)) {
       ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.VERTIGO, null, ShadesClient::buildMotionUniform);
+      return;
+    }
+    if (postEffectId.equals(ANIMATED_GLASS_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.ANIMATED_GLASS, null);
+      return;
+    }
+    if (postEffectId.equals(MOLTEN_GLASS_SHADES_MARKER)) {
+      ShadesLiveVision.process(resourcePool, ShadesRenderPipelines.MOLTEN_GLASS, null, ShadesClient::buildGlassUniform);
       return;
     }
 
@@ -344,6 +365,25 @@ public class ShadesClient {
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:vertigo_motion_config", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("MotionConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// pushes the real window aspect ratio, so molten_glass.fsh's metaball field can correct its
+  /// x-distance before computing blob radii - UV space is 0..1 in both axes regardless of the
+  /// window's real pixel aspect, so an uncorrected "circle" in UV space renders as a wide ellipse
+  /// on any non-square window
+  private static GpuBuffer buildGlassUniform(RenderPass renderPass) {
+
+    Window window = Minecraft.getInstance().getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:glass_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("GlassConfig", buffer);
       return buffer;
     }
   }
