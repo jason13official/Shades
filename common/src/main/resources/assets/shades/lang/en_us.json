@@ -9,6 +9,10 @@
   "item.shades.thermal_shades": "Thermal Shades",
   "item.shades.matrix_shades": "Matrix Shades",
   "item.shades.prism_shades": "Prism Shades",
+  "item.shades.receipt_shades": "Receipt Shades",
+  "item.shades.halftone_shades": "Halftone Shades",
+  "item.shades.lego_shades": "Lego Shades",
+  "item.shades.fluted_glass_shades": "Fluted Glass Shades",
   "key.shades.cycle_prism": "Cycle Prism Shades Effect",
   "key.categories.shades": "Shades"
 }

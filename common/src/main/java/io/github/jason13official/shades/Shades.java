@@ -25,5 +25,9 @@ public class Shades {
     consumer.accept(ModItems.THERMAL_SHADES);
     consumer.accept(ModItems.MATRIX_SHADES);
     consumer.accept(ModItems.PRISM_SHADES);
+    consumer.accept(ModItems.RECEIPT_SHADES);
+    consumer.accept(ModItems.HALFTONE_SHADES);
+    consumer.accept(ModItems.LEGO_SHADES);
+    consumer.accept(ModItems.FLUTED_GLASS_SHADES);
   }
 }

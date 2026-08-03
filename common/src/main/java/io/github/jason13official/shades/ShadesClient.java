@@ -26,6 +26,10 @@ public class ShadesClient {
   public static final Identifier NIGHT_VISION_SHADES_POST_EFFECT = Shades.identifier("night_vision_shades");
   public static final Identifier THERMAL_SHADES_POST_EFFECT = Shades.identifier("thermal_shades");
   public static final Identifier MATRIX_SHADES_POST_EFFECT = Shades.identifier("matrix_shades");
+  public static final Identifier RECEIPT_SHADES_POST_EFFECT = Shades.identifier("receipt_shades");
+  public static final Identifier HALFTONE_SHADES_POST_EFFECT = Shades.identifier("halftone_shades");
+  public static final Identifier LEGO_SHADES_POST_EFFECT = Shades.identifier("lego_shades");
+  public static final Identifier FLUTED_GLASS_SHADES_POST_EFFECT = Shades.identifier("fluted_glass_shades");
 
   /// every effect prism_shades can cycle through; `null` at index 0 is the "off" state
   private static final List<Identifier> PRISM_CYCLE = Arrays.asList(
@@ -37,7 +41,11 @@ public class ShadesClient {
       BLUR_SHADES_POST_EFFECT,
       NIGHT_VISION_SHADES_POST_EFFECT,
       THERMAL_SHADES_POST_EFFECT,
-      MATRIX_SHADES_POST_EFFECT);
+      MATRIX_SHADES_POST_EFFECT,
+      RECEIPT_SHADES_POST_EFFECT,
+      HALFTONE_SHADES_POST_EFFECT,
+      LEGO_SHADES_POST_EFFECT,
+      FLUTED_GLASS_SHADES_POST_EFFECT);
 
   private static final KeyMapping.Category SHADES_KEY_CATEGORY = KeyMapping.Category.register(Shades.identifier("shades"));
 
@@ -64,7 +72,11 @@ public class ShadesClient {
           Map.entry(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT),
           Map.entry(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT),
           Map.entry(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT),
-          Map.entry(ModItems.MATRIX_SHADES, MATRIX_SHADES_POST_EFFECT));
+          Map.entry(ModItems.MATRIX_SHADES, MATRIX_SHADES_POST_EFFECT),
+          Map.entry(ModItems.RECEIPT_SHADES, RECEIPT_SHADES_POST_EFFECT),
+          Map.entry(ModItems.HALFTONE_SHADES, HALFTONE_SHADES_POST_EFFECT),
+          Map.entry(ModItems.LEGO_SHADES, LEGO_SHADES_POST_EFFECT),
+          Map.entry(ModItems.FLUTED_GLASS_SHADES, FLUTED_GLASS_SHADES_POST_EFFECT));
     }
 
     return postEffectsByItem;

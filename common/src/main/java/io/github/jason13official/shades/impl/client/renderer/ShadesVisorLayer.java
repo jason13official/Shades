@@ -51,7 +51,11 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
           Map.entry(ModItems.NIGHT_VISION_SHADES, Shades.identifier("textures/models/armor/night_vision_shades_visor.png")),
           Map.entry(ModItems.THERMAL_SHADES, Shades.identifier("textures/models/armor/thermal_shades_visor.png")),
           Map.entry(ModItems.MATRIX_SHADES, Shades.identifier("textures/models/armor/matrix_shades_visor.png")),
-          Map.entry(ModItems.PRISM_SHADES, Shades.identifier("textures/models/armor/prism_shades_visor.png")));
+          Map.entry(ModItems.PRISM_SHADES, Shades.identifier("textures/models/armor/prism_shades_visor.png")),
+          Map.entry(ModItems.RECEIPT_SHADES, Shades.identifier("textures/models/armor/receipt_shades_visor.png")),
+          Map.entry(ModItems.HALFTONE_SHADES, Shades.identifier("textures/models/armor/halftone_shades_visor.png")),
+          Map.entry(ModItems.LEGO_SHADES, Shades.identifier("textures/models/armor/lego_shades_visor.png")),
+          Map.entry(ModItems.FLUTED_GLASS_SHADES, Shades.identifier("textures/models/armor/fluted_glass_shades_visor.png")));
     }
 
     return texturesByItem;
