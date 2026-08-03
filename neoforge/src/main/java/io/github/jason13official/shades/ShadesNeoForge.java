@@ -19,7 +19,6 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
@@ -50,7 +49,7 @@ public class ShadesNeoForge {
 
     EVENT_BUS.addListener((Consumer<BuildCreativeModeTabContentsEvent>) event -> {
       if (event.getTab().equals(ModTabs.SHADES)) {
-        Shades.addItemsToTab(event::accept);
+        ModTabs.addItemsToTab(event::accept);
       }
     });
 

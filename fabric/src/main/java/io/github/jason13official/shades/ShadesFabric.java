@@ -12,8 +12,6 @@ import java.util.function.Consumer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
-import net.fabricmc.fabric.impl.creativetab.FabricCreativeModeTabImpl;
-import net.fabricmc.fabric.impl.resource.DataResourceLoaderImpl;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -39,7 +37,7 @@ public class ShadesFabric implements ModInitializer {
 
     CreativeModeTabEvents.MODIFY_OUTPUT_ALL.register((tab, output) -> {
       if (tab.equals(ModTabs.SHADES)) {
-        Shades.addItemsToTab(output::accept);
+        ModTabs.addItemsToTab(output::accept);
       }
     });
 
