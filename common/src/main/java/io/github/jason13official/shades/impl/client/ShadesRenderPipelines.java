@@ -163,11 +163,13 @@ public class ShadesRenderPipelines {
       .withUniform("OrbConfig", UniformType.UNIFORM_BUFFER)
       .build();
 
-  /// oscilloscope trace of the real world's silhouette (depth-reconstructed world height per
-  /// column, see waveform.fsh) with a fading trail - needs "InDepthSampler" (shared
-  /// worldDepthCapture, same as SONAR/GRID) + "PrevFrameSampler" (this effect's own previous
-  /// frame, see ShadesLiveVision's feedback-target overload) alongside InSampler, plus a
-  /// "WaveformRay" uniform (combined inverse-projection*view matrix + camera position)
+  /// contour line traced along real depth-reconstructed world height (see waveform.fsh) with a
+  /// fading trail, plus a full-screen crossing flash when the scan altitude sweeps through the
+  /// camera's own eye level - needs "InDepthSampler" (shared worldDepthCapture, same as SONAR/
+  /// GRID) + "PrevFrameSampler" (this effect's own previous frame, see ShadesLiveVision's
+  /// feedback-target overload) alongside InSampler, plus a "WaveformRay" uniform (both the
+  /// inverse-projection*view matrix for world reconstruction AND the non-inverted matrix for
+  /// forward-projecting the flash's screen row, + camera position)
   public static final RenderPipeline WAVEFORM = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/waveform"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)

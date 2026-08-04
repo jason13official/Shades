@@ -489,10 +489,30 @@ public class ShadesClient {
     return buildWorldRayUniform(renderPass, "GridRay", "shades:grid_ray");
   }
 
-  /// pushes a combined inverse-projection*view matrix + camera position, so waveform.fsh can read
-  /// real per-column world height for its traced curve - same worldPos() technique grid.fsh uses
+  /// pushes both the inverse-projection*view matrix (worldPos(), same as the others) AND the
+  /// non-inverted projection*view matrix, so waveform.fsh can also go the other direction -
+  /// forward-project a world point (the scan altitude's crossing plane, straight ahead of the
+  /// camera) back into screen space, to find which real screen row the full-screen crossing flash
+  /// belongs at. Without this the flash was pinned to a hardcoded row (0.5) and didn't move as the
+  /// camera's pitch or the scan altitude itself changed
   private static GpuBuffer buildWaveformRayUniform(RenderPass renderPass) {
-    return buildWorldRayUniform(renderPass, "WaveformRay", "shades:waveform_ray");
+
+    CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
+
+    Matrix4f projView = new Matrix4f(cameraState.projectionMatrix).mul(cameraState.viewRotationMatrix);
+    Matrix4f inverseTransform = new Matrix4f(projView).invert();
+    Vec3 cameraPos = cameraState.pos;
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 144)
+          .putMat4f(inverseTransform)
+          .putMat4f(projView)
+          .putVec3((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:waveform_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("WaveformRay", buffer);
+      return buffer;
+    }
   }
 
   /// pushes a combined inverse-projection*view matrix + camera position, so fluid.fsh can sample
