@@ -21,10 +21,10 @@ import net.minecraft.world.phys.Vec3;
 /// every camera mode, just achieved through real world-space geometry instead of a post pass.
 ///
 /// `ShadesVisorLayer` still separately renders the actual worn lens model too (using this same
-/// `ShadesRenderPipelines.plasma()` RenderType) - that's what OTHER players see on us; this quad
+/// `ShadesRenderPipelines.plasma()` RenderType) ->  that's what OTHER players see on us; this quad
 /// only ever exists relative to OUR OWN camera, so it's invisible from anyone else's viewpoint.
 ///
-/// Local player only; extending this to other visible players wouldn't make sense here anyway -
+/// Local player only; extending this to other visible players wouldn't make sense here anyway -> 
 /// you only ever look through your own camera
 /// @see ShadesRenderPipelines
 public class ShadesPlasmaEffect {

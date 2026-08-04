@@ -19,7 +19,7 @@ import net.minecraft.resources.Identifier;
 /// pair of shades used so far.
 ///
 /// `PostPass` always builds its pipeline from `RenderPipelines.POST_PROCESSING_SNIPPET` alone,
-/// never combined with `RenderPipelines.GLOBALS_SNIPPET` -> so a post_effect JSON can never read live `GameTime`,
+/// never combined with `RenderPipelines.GLOBALS_SNIPPET` -> > so a post_effect JSON can never read live `GameTime`,
 /// only whatever's baked into it at load time.
 ///
 /// Building our own pipeline (composing MATRICES_FOG_SNIPPET + GLOBALS_SNIPPET, same as vanilla's own
@@ -47,7 +47,7 @@ public class ShadesRenderPipelines {
             .createRenderSetup());
   }
 
-  /// vanilla's own fullscreen-triangle vertex shader (see `screenquad.vsh`) - reused directly
+  /// vanilla's own fullscreen-triangle vertex shader (see `screenquad.vsh`) ->  reused directly
   /// since our live shaders below are plain 2D fullscreen passes, same as every `post_effect`
   /// pass, just combined with GLOBALS_SNIPPET so the fragment shader can read live GameTime.
   /// See `ShadesLiveVision` for how these get driven by hand instead of through `PostChain`.
@@ -60,10 +60,10 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .build();
 
-  /// needs a custom "CameraRay" uniform too (unlike STATIC_TV/GLITCH) - a combined
+  /// needs a custom "CameraRay" uniform too (unlike STATIC_TV/GLITCH) ->  a combined
   /// inverse-projection*view matrix + camera/ping-origin positions, pushed fresh each frame by
   /// `ShadesClient` from real `GameRenderState` fields, used to reconstruct real world-space
-  /// position per pixel. Deliberately not ambient `ProjMat`/`ModelViewMat` -> those turned out to
+  /// position per pixel. Deliberately not ambient `ProjMat`/`ModelViewMat` -> > those turned out to
   /// be stale/wrong at this point in the frame (see Key Findings)
   public static final RenderPipeline SONAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/sonar"))
@@ -117,7 +117,7 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .build();
 
-  /// lava-lamp metaball field, refracted around its own blobs instead of a fixed ridge pattern -
+  /// lava-lamp metaball field, refracted around its own blobs instead of a fixed ridge pattern -> 
   /// needs a "GlassConfig" uniform (real window aspect ratio) so the blobs render as true circles
   /// instead of stretched ellipses, pushed fresh each frame by ShadesClient
   public static final RenderPipeline MOLTEN_GLASS = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
@@ -128,7 +128,7 @@ public class ShadesRenderPipelines {
       .withUniform("GlassConfig", UniformType.UNIFORM_BUFFER)
       .build();
 
-  /// domain-warped fractal-sine fire field - needs a "FireConfig" uniform (real window aspect
+  /// domain-warped fractal-sine fire field ->  needs a "FireConfig" uniform (real window aspect
   /// ratio) so the flame pattern isn't stretched on a non-square window, pushed fresh each frame
   /// by ShadesClient
   public static final RenderPipeline FIRE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
@@ -137,5 +137,62 @@ public class ShadesRenderPipelines {
       .withFragmentShader(Shades.identifier("core/fire"))
       .withSampler("InSampler")
       .withUniform("FireConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// tile-ripple raymarch surface, used to refract/tint the real InSampler background rather than
+  /// replace it (see grid.fsh) ->  "GridConfig" uniform (real window aspect ratio) only, no sway/
+  /// feedback needed
+  public static final RenderPipeline GRID = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/grid"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/grid"))
+      .withSampler("InSampler")
+      .withUniform("GridConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// single roaming noise-churned lens, fisheye-refracting the real InSampler background within
+  /// its footprint (molten_glass's single-blob trick, see orb.fsh) ->  "OrbConfig" uniform (real
+  /// window aspect ratio) only
+  public static final RenderPipeline ORB = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/orb"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/orb"))
+      .withSampler("InSampler")
+      .withUniform("OrbConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// oscilloscope trace with a fading trail ->  needs "PrevFrameSampler" (this effect's own
+  /// previous frame, see ShadesLiveVision's feedback-target overload) alongside the usual
+  /// InSampler, plus a "WaveformConfig" uniform (real window aspect ratio)
+  public static final RenderPipeline WAVEFORM = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/waveform"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/waveform"))
+      .withSampler("InSampler")
+      .withSampler("PrevFrameSampler")
+      .withUniform("WaveformConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// single-pass wave-sim liquid surface ->  also needs "PrevFrameSampler" (the sim's own previous
+  /// frame's height field, packed into alpha ->  see fluid.fsh) plus a "FluidConfig" uniform (real
+  /// window aspect ratio)
+  public static final RenderPipeline FLUID = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/fluid"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/fluid"))
+      .withSampler("InSampler")
+      .withSampler("PrevFrameSampler")
+      .withUniform("FluidConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// procedurally-noised bump-mapped copper foil, refracting/tinting the real InSampler
+  /// background rather than replacing it (see copper.fsh) ->  "CopperConfig" uniform (real window
+  /// aspect ratio) for the light direction calc
+  public static final RenderPipeline COPPER = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/copper"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/copper"))
+      .withSampler("InSampler")
+      .withUniform("CopperConfig", UniformType.UNIFORM_BUFFER)
       .build();
 }

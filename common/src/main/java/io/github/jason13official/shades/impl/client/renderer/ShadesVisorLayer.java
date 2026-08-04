@@ -38,7 +38,7 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
   }
 
   /// every item's visor texture lives at `{id}_visor.png` (same pixel mask, only fill colors
-  /// differ - see SUMMARY.md) except plasma_shades, which has no static texture at all since its
+  /// differ) except plasma_shades, which has no static texture at all since its
   /// lens is the live shader itself; derives the path from [ModItems#idOf] instead of keeping a
   /// duplicate 29-entry map in lockstep with ModItems' fields
   private static Identifier textureFor(Item item) {

@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 ///
 /// carries the actual head-slot ItemStack, captured from the entity during extraction,
 /// independent of vanilla's own `headEquipment`
-/// (which is `ItemStack.EMPTY` unless `HumanoidArmorLayer.shouldRender` is true -> i.e. unless the item has an `Equippable` asset,
+/// (which is `ItemStack.EMPTY` unless `HumanoidArmorLayer.shouldRender` is true -> > i.e. unless the item has an `Equippable` asset,
 /// which ours deliberately doesn't have)
 public interface ShadesRenderStateExtension {
 

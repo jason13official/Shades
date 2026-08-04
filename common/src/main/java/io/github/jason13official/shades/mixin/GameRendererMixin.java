@@ -24,7 +24,7 @@ public abstract class GameRendererMixin {
   }
 
   /// snapshots real depth right after the world/entities finish rendering, but before
-  /// renderItemInHand clears it to draw the hand - by shades$applyVisorShader's hook point (after
+  /// renderItemInHand clears it to draw the hand ->  by shades$applyVisorShader's hook point (after
   /// renderLevel fully returns) that clear already wiped out everything except the hand, so
   /// anything needing real terrain depth (sonar_shades) reads from this snapshot instead
   @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V",

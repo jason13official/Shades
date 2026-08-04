@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:glass_pane",
+    "minecraft:glass_pane",
+    "minecraft:note_block"
+  ],
+  "result": {
+    "id": "shades:waveform_shades"
+  }
+}

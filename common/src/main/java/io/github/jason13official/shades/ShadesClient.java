@@ -63,11 +63,11 @@ public class ShadesClient {
   public static final Identifier PREDATOR_SHADES_POST_EFFECT = Shades.identifier("predator_shades");
   public static final Identifier FRACTAL_SHADES_POST_EFFECT = Shades.identifier("fractal_shades");
 
-  /// sentinel -> plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
+  /// sentinel -> > plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
   /// visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad instead
   public static final Identifier PLASMA_SHADES_MARKER = Shades.identifier("plasma_shades");
 
-  /// sentinels for items needing live GameTime (post_effect JSON can't provide it) -> doGameRender
+  /// sentinels for items needing live GameTime (post_effect JSON can't provide it) -> > doGameRender
   /// routes these to ShadesLiveVision's hand-rolled pass instead of PostChain
   public static final Identifier STATIC_SHADES_MARKER = Shades.identifier("static_shades");
   public static final Identifier SONAR_SHADES_MARKER = Shades.identifier("sonar_shades");
@@ -78,10 +78,15 @@ public class ShadesClient {
   public static final Identifier ANIMATED_GLASS_SHADES_MARKER = Shades.identifier("animated_glass_shades");
   public static final Identifier MOLTEN_GLASS_SHADES_MARKER = Shades.identifier("molten_glass_shades");
   public static final Identifier FIRE_SHADES_MARKER = Shades.identifier("fire_shades");
+  public static final Identifier GRID_SHADES_MARKER = Shades.identifier("grid_shades");
+  public static final Identifier ORB_SHADES_MARKER = Shades.identifier("orb_shades");
+  public static final Identifier WAVEFORM_SHADES_MARKER = Shades.identifier("waveform_shades");
+  public static final Identifier FLUID_SHADES_MARKER = Shades.identifier("fluid_shades");
+  public static final Identifier COPPER_SHADES_MARKER = Shades.identifier("copper_shades");
 
   /// one entry per effect prism_shades can cycle through, in cycle order; item is `null` only for
   /// the index-0 "off" state. Replaces what used to be two separate parallel lists (an Identifier
-  /// list and a same-order String list) kept in sync purely by matching index by hand - now a
+  /// list and a same-order String list) kept in sync purely by matching index by hand ->  now a
   /// single ordered list makes that pairing impossible to desync
   private record Effect(Item item, Identifier id, String displayName) {}
 
@@ -122,6 +127,11 @@ public class ShadesClient {
           new Effect(ModItems.ANIMATED_GLASS_SHADES, ANIMATED_GLASS_SHADES_MARKER, "Animated Glass"),
           new Effect(ModItems.MOLTEN_GLASS_SHADES, MOLTEN_GLASS_SHADES_MARKER, "Molten Glass"),
           new Effect(ModItems.FIRE_SHADES, FIRE_SHADES_MARKER, "Fire"),
+          new Effect(ModItems.GRID_SHADES, GRID_SHADES_MARKER, "Grid"),
+          new Effect(ModItems.ORB_SHADES, ORB_SHADES_MARKER, "Orb"),
+          new Effect(ModItems.WAVEFORM_SHADES, WAVEFORM_SHADES_MARKER, "Waveform"),
+          new Effect(ModItems.FLUID_SHADES, FLUID_SHADES_MARKER, "Fluid"),
+          new Effect(ModItems.COPPER_SHADES, COPPER_SHADES_MARKER, "Copper"),
           new Effect(ModItems.PLASMA_SHADES, PLASMA_SHADES_MARKER, "Plasma"));
     }
 
@@ -143,7 +153,7 @@ public class ShadesClient {
   public static void init() {
   }
 
-  /// derived from effects() -> every item except the "off" sentinel (null item) and plasma_shades
+  /// derived from effects() -> > every item except the "off" sentinel (null item) and plasma_shades
   /// (that one's routed to the live shader lens/quad instead of a post_effect chain, see
   /// doGameRender's PLASMA_SHADES_MARKER check)
   private static Map<Item, Identifier> postEffectsByItem() {
@@ -189,7 +199,7 @@ public class ShadesClient {
 
     LiveEffect liveEffect = liveEffects().get(postEffectId);
     if (liveEffect != null) {
-      ShadesLiveVision.process(resourcePool, liveEffect.pipeline(), liveEffect.depth().get(), liveEffect.extraUniforms());
+      ShadesLiveVision.process(resourcePool, liveEffect.pipeline(), liveEffect.depth().get(), liveEffect.extraUniforms(), liveEffect.feedback().get());
       return;
     }
 
@@ -199,11 +209,14 @@ public class ShadesClient {
     }
   }
 
-  /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels' doc comment) ->
+  /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels' doc comment) -> >
   /// `depth` is a Supplier since sonar_shades' depth capture is refreshed every frame
   /// (getSonarDepthCapture()) rather than a fixed value; `extraUniforms` mirrors
-  /// ShadesLiveVision#process's own optional hook, `null` where an effect needs no custom uniform
-  private record LiveEffect(RenderPipeline pipeline, Supplier<GpuTextureView> depth, Function<RenderPass, GpuBuffer> extraUniforms) {}
+  /// ShadesLiveVision#process's own optional hook, `null` where an effect needs no custom uniform;
+  /// `feedback` likewise mirrors its feedbackTarget hook, `() -> > null` where an effect has no
+  /// trail/self-simulation needing its own previous frame back (see waveform_shades/fluid_shades)
+  private record LiveEffect(RenderPipeline pipeline, Supplier<GpuTextureView> depth, Function<RenderPass, GpuBuffer> extraUniforms,
+      Supplier<RenderTarget> feedback) {}
 
   private static Map<Identifier, LiveEffect> liveEffects;
 
@@ -211,22 +224,27 @@ public class ShadesClient {
 
     if (liveEffects == null) {
       liveEffects = Map.ofEntries(
-          Map.entry(STATIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.STATIC_TV, () -> null, null)),
-          Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getSonarDepthCapture, ShadesClient::buildSonarCameraRayUniform)),
-          Map.entry(GLITCH_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GLITCH, () -> null, null)),
-          Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, null)),
-          Map.entry(CURSOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.CURSOR, () -> null, ShadesClient::buildCursorUniform)),
-          Map.entry(VERTIGO_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VERTIGO, () -> null, ShadesClient::buildMotionUniform)),
-          Map.entry(ANIMATED_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ANIMATED_GLASS, () -> null, null)),
-          Map.entry(MOLTEN_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MOLTEN_GLASS, () -> null, ShadesClient::buildGlassUniform)),
-          Map.entry(FIRE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FIRE, () -> null, ShadesClient::buildFireUniform)));
+          Map.entry(STATIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.STATIC_TV, () -> null, null, () -> null)),
+          Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getSonarDepthCapture, ShadesClient::buildSonarCameraRayUniform, () -> null)),
+          Map.entry(GLITCH_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GLITCH, () -> null, null, () -> null)),
+          Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, null, () -> null)),
+          Map.entry(CURSOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.CURSOR, () -> null, ShadesClient::buildCursorUniform, () -> null)),
+          Map.entry(VERTIGO_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VERTIGO, () -> null, ShadesClient::buildMotionUniform, () -> null)),
+          Map.entry(ANIMATED_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ANIMATED_GLASS, () -> null, null, () -> null)),
+          Map.entry(MOLTEN_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MOLTEN_GLASS, () -> null, ShadesClient::buildGlassUniform, () -> null)),
+          Map.entry(FIRE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FIRE, () -> null, ShadesClient::buildFireUniform, () -> null)),
+          Map.entry(GRID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRID, () -> null, ShadesClient::buildGridUniform, () -> null)),
+          Map.entry(ORB_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ORB, () -> null, ShadesClient::buildOrbUniform, () -> null)),
+          Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, () -> null, ShadesClient::buildWaveformUniform, ShadesClient::getWaveformFeedback)),
+          Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, () -> null, ShadesClient::buildFluidUniform, ShadesClient::getFluidFeedback)),
+          Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)));
     }
 
     return liveEffects;
   }
 
   /// persistent (not scratch-pool) copy of the real depth buffer, refreshed via
-  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -
+  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -> 
   /// see that mixin's doc comment for why mainTarget's own depth can't be read directly by the
   /// time doGameRender runs later in the same frame
   private static RenderTarget sonarDepthCapture;
@@ -254,7 +272,46 @@ public class ShadesClient {
     return sonarDepthCapture != null ? sonarDepthCapture.getDepthTextureView() : null;
   }
 
-  /// world position the sonar ping currently expands from -> re-anchored once per ping cycle (see
+  /// persistent color-only feedback buffers for effects that need their own previous frame's
+  /// output back (see ShadesLiveVision's feedbackTarget overload) ->  kept as separate fields, not
+  /// one shared buffer, so switching between waveform_shades/fluid_shades (e.g. mid-Prism-cycle)
+  /// can't leak one effect's trail/simulation state into the other's, same isolation reasoning as
+  /// the smoothedSway* vs. smoothedSpeed/smoothedTurn fields below
+  private static RenderTarget waveformFeedback;
+  private static RenderTarget fluidFeedback;
+
+  private static RenderTarget getWaveformFeedback() {
+    waveformFeedback = ensureFeedbackTarget(waveformFeedback);
+    return waveformFeedback;
+  }
+
+  private static RenderTarget getFluidFeedback() {
+    fluidFeedback = ensureFeedbackTarget(fluidFeedback);
+    return fluidFeedback;
+  }
+
+  /// (re)allocates a persistent color-only target sized to the main target, cleared to opaque
+  /// black on (re)creation ->  unlike sonarDepthCapture, this one gets *read* before anything is
+  /// ever copied into it (the very first frame an item wearing it is worn), so it can't rely on a
+  /// same-frame write-before-read like captureWorldDepth does; it needs an explicit clear instead
+  private static RenderTarget ensureFeedbackTarget(RenderTarget existing) {
+
+    Minecraft mc = Minecraft.getInstance();
+    RenderTarget mainTarget = mc.getMainRenderTarget();
+
+    if (existing == null || existing.width != mainTarget.width || existing.height != mainTarget.height) {
+      if (existing != null) {
+        existing.destroyBuffers();
+      }
+      RenderTarget feedback = new TextureTarget(null, mainTarget.width, mainTarget.height, false);
+      RenderSystem.getDevice().createCommandEncoder().clearColorTexture(feedback.getColorTexture(), 0xFF000000);
+      return feedback;
+    }
+
+    return existing;
+  }
+
+  /// world position the sonar ping currently expands from -> > re-anchored once per ping cycle (see
   /// buildSonarCameraRayUniform) instead of sliding with the player every frame, same "propagate
   /// from a fixed point" idea orbital_railgun uses for its strike position
   private static Vec3 sonarPingOrigin;
@@ -314,7 +371,7 @@ public class ShadesClient {
     }
   }
 
-  /// smoothed 0..1 factors driving vertigo.fsh -> raw speed/turn are noisy per-frame, so each is
+  /// smoothed 0..1 factors driving vertigo.fsh -> > raw speed/turn are noisy per-frame, so each is
   /// eased toward its target every frame rather than applied directly (same "ease toward a target
   /// instead of snapping" idea as Adaptive-Armor's SprintMomentum buildup, just a plain
   /// exponential filter here since this is purely a local visual, not synced game state)
@@ -360,7 +417,7 @@ public class ShadesClient {
     }
   }
 
-  /// smoothed yaw/pitch delta driving molten_glass.fsh's blob sway - same eased-toward-target
+  /// smoothed yaw/pitch delta driving molten_glass.fsh's blob sway ->  same eased-toward-target
   /// idea as vertigo's smoothedSpeed/smoothedTurn, kept as separate fields so switching between
   /// vertigo_shades and molten_glass_shades (e.g. mid-Prism-cycle) can't cause one effect's
   /// smoothing state to jump-start the other's
@@ -370,7 +427,7 @@ public class ShadesClient {
   private static float previousGlassPitch = Float.NaN;
 
   /// pushes the real window aspect ratio (see molten_glass.fsh's GlassConfig doc) plus a
-  /// smoothed screen-space sway offset opposite the direction the camera is currently swinging -
+  /// smoothed screen-space sway offset opposite the direction the camera is currently swinging -> 
   /// the blobs lag behind a camera turn like they've got real inertia, then drift back to center
   /// as the turn eases off, same buildup/decay-by-easing idea as vertigo's buildMotionUniform
   private static GpuBuffer buildGlassUniform(RenderPass renderPass) {
@@ -414,7 +471,7 @@ public class ShadesClient {
   }
 
   /// pushes the real window aspect ratio, so fire.fsh's virtual-space sampling isn't stretched on
-  /// a non-square window - no sway/other state needed, unlike molten_glass's GlassConfig
+  /// a non-square window ->  no sway/other state needed, unlike molten_glass's GlassConfig
   private static GpuBuffer buildFireUniform(RenderPass renderPass) {
 
     Window window = Minecraft.getInstance().getWindow();
@@ -430,12 +487,59 @@ public class ShadesClient {
     }
   }
 
+  /// pushes the real window aspect ratio, so grid.fsh's fixed camera frames a square-looking
+  /// tile grid regardless of window shape
+  private static GpuBuffer buildGridUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "GridConfig", "shades:grid_config");
+  }
+
+  /// pushes the real window aspect ratio, so orb.fsh's near-plane projection isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildOrbUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "OrbConfig", "shades:orb_config");
+  }
+
+  /// pushes the real window aspect ratio, so waveform.fsh's traced line isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildWaveformUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "WaveformConfig", "shades:waveform_config");
+  }
+
+  /// pushes the real window aspect ratio, so fluid.fsh's perturbation/reflection math isn't
+  /// stretched on a non-square window
+  private static GpuBuffer buildFluidUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "FluidConfig", "shades:fluid_config");
+  }
+
+  /// pushes the real window aspect ratio, so copper.fsh's light-direction calc isn't skewed on a
+  /// non-square window
+  private static GpuBuffer buildCopperUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "CopperConfig", "shades:copper_config");
+  }
+
+  /// shared by the five aspect-ratio-only uniform blocks above ->  each is otherwise identical to
+  /// buildFireUniform, just under a different uniform/buffer name
+  private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
+
+    Window window = Minecraft.getInstance().getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> bufferLabel, GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform(uniformName, buffer);
+      return buffer;
+    }
+  }
+
   /// true when plasma_shades is worn directly, OR prism_shades is worn and currently cycled to
-  /// the plasma option -> used by ShadesVisorLayer/ShadesPlasmaEffect to pick the live
+  /// the plasma option -> > used by ShadesVisorLayer/ShadesPlasmaEffect to pick the live
   /// GameTime-driven plasma RenderType instead of their normal per-item behavior.
   ///
   /// takes the real head-slot stack (not just the Item) since the cycle position now lives on
-  /// [ModComponents#PRISM_CYCLE_INDEX] -> correct for other tracked players too, not just us
+  /// [ModComponents#PRISM_CYCLE_INDEX] -> > correct for other tracked players too, not just us
   public static boolean isPlasmaSelected(ItemStack headStack) {
 
     Item headItem = headStack.getItem();

@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 
 /// we extend HumanoidModel but only re-use `head` so that our model
-/// is a real child of `head` -> inherits the look-angle transform through
+/// is a real child of `head` -> > inherits the look-angle transform through
 /// the normal model hierarchy at render time, no pose copy needed
 public class ShadesVisorModel extends HumanoidModel<AvatarRenderState> {
 

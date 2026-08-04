@@ -48,6 +48,11 @@ public class ModItems {
   public static Item ANIMATED_GLASS_SHADES;
   public static Item MOLTEN_GLASS_SHADES;
   public static Item FIRE_SHADES;
+  public static Item GRID_SHADES;
+  public static Item ORB_SHADES;
+  public static Item WAVEFORM_SHADES;
+  public static Item FLUID_SHADES;
+  public static Item COPPER_SHADES;
   public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
@@ -81,18 +86,23 @@ public class ModItems {
     ANIMATED_GLASS_SHADES = registerShades("animated_glass_shades", consumer);
     MOLTEN_GLASS_SHADES = registerShades("molten_glass_shades", consumer);
     FIRE_SHADES = registerShades("fire_shades", consumer);
+    GRID_SHADES = registerShades("grid_shades", consumer);
+    ORB_SHADES = registerShades("orb_shades", consumer);
+    WAVEFORM_SHADES = registerShades("waveform_shades", consumer);
+    FLUID_SHADES = registerShades("fluid_shades", consumer);
+    COPPER_SHADES = registerShades("copper_shades", consumer);
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 
-  /// every item registered via [#registerShades] below, in registration order -> single choke
+  /// every item registered via [#registerShades] below, in registration order -> > single choke
   /// point so ModTabs/CustomHeadLayerMixin don't each need their own duplicate 29-item list
   private static final List<Item> ALL_SHADES = new ArrayList<>();
 
-  /// each item's own registered id string, keyed back from the Item -> lets ShadesVisorLayer
+  /// each item's own registered id string, keyed back from the Item -> > lets ShadesVisorLayer
   /// derive `{id}_visor.png` texture paths instead of keeping a duplicate 29-entry map
   private static final Map<Item, String> IDS_BY_ITEM = new LinkedHashMap<>();
 
-  /// no ArmorMaterial/asset -> own visor cosmetic (client renderer) is the only thing rendered on the head,
+  /// no ArmorMaterial/asset -> > own visor cosmetic (client renderer) is the only thing rendered on the head,
   /// and ShadesClient#doGameRender picks a post-processing chain per item once worn
   private static Item registerShades(String id, BiConsumer<Item, Identifier> consumer) {
 

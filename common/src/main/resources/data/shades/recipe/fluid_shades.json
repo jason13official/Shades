@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:glass_pane",
+    "minecraft:glass_pane",
+    "minecraft:water_bucket"
+  ],
+  "result": {
+    "id": "shades:fluid_shades"
+  }
+}

@@ -16,7 +16,7 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 
-/// hand-rolled equivalent of a single `PostPass`, for shaders that need live `GameTime` -
+/// hand-rolled equivalent of a single `PostPass`, for shaders that need live `GameTime` -> 
 /// `PostChain`/`PostPass` always build from `POST_PROCESSING_SNIPPET` alone, never combined with
 /// `GLOBALS_SNIPPET`, so a real `post_effect` JSON never gets it. Copies the current frame into a
 /// scratch target (avoids a read/write hazard), draws one fullscreen triangle with a
@@ -29,15 +29,27 @@ public class ShadesLiveVision {
     process(resourcePool, pipeline, depthView, null);
   }
 
-  /// `depthView`, if given, is bound as `InDepthSampler` -> pass the real main target's depth
+  /// `depthView`, if given, is bound as `InDepthSampler` -> > pass the real main target's depth
   /// only if it's known-fresh at this point in the frame (see GameRendererMixin's
   /// shades$captureWorldDepth for why that's often not true anymore by our hook)
   ///
-  /// `extraUniforms`, if given, runs right before the draw call -> it should bind whatever custom
+  /// `extraUniforms`, if given, runs right before the draw call -> > it should bind whatever custom
   /// uniform(s) the pipeline needs and return the GpuBuffer it created, so this method can close
   /// it once the draw is done (built fresh every frame, not pooled like PostPass's own uniforms)
   public static void process(CrossFrameResourcePool resourcePool, RenderPipeline pipeline, GpuTextureView depthView,
       Function<RenderPass, GpuBuffer> extraUniforms) {
+    process(resourcePool, pipeline, depthView, extraUniforms, null);
+  }
+
+  /// `feedbackTarget`, if given, is bound as `PrevFrameSampler` (this effect's own previous
+  /// frame's output) before the draw, then overwritten with this frame's fresh result right after
+  /// ->  a genuine persistent ping-pong buffer, unlike `resourcePool`'s scratch targets, which are
+  /// explicitly cleared on every acquire (see `RenderTargetDescriptor#prepare`) and so can't carry
+  /// content across frames. The target itself is caller-owned (see ShadesClient's
+  /// waveformFeedback/fluidFeedback) so switching items can't leak one effect's trail into
+  /// another's
+  public static void process(CrossFrameResourcePool resourcePool, RenderPipeline pipeline, GpuTextureView depthView,
+      Function<RenderPass, GpuBuffer> extraUniforms, RenderTarget feedbackTarget) {
 
     Minecraft mc = Minecraft.getInstance();
     RenderTarget mainTarget = mc.getMainRenderTarget();
@@ -68,6 +80,9 @@ public class ShadesLiveVision {
       if (depthView != null) {
         renderPass.bindTexture("InDepthSampler", depthView, sampler);
       }
+      if (feedbackTarget != null) {
+        renderPass.bindTexture("PrevFrameSampler", feedbackTarget.getColorTextureView(), sampler);
+      }
       if (extraUniforms != null) {
         extraBuffer = extraUniforms.apply(renderPass);
       }
@@ -77,6 +92,13 @@ public class ShadesLiveVision {
       if (extraBuffer != null) {
         extraBuffer.close();
       }
+    }
+
+    // capture this frame's freshly-drawn result for next frame's PrevFrameSampler read -> done
+    // after the render pass closes, so we're never reading and writing the same texture at once
+    if (feedbackTarget != null) {
+      commandEncoder.copyTextureToTexture(
+          mainTarget.getColorTexture(), feedbackTarget.getColorTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);
     }
 
     resourcePool.release(descriptor, scratch);
