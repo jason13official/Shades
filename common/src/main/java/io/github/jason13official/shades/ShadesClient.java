@@ -50,7 +50,6 @@ public class ShadesClient {
   public static final Identifier BLUR_SHADES_POST_EFFECT = Shades.identifier("blur_shades");
   public static final Identifier NIGHT_VISION_SHADES_POST_EFFECT = Shades.identifier("night_vision_shades");
   public static final Identifier THERMAL_SHADES_POST_EFFECT = Shades.identifier("thermal_shades");
-  public static final Identifier MATRIX_SHADES_POST_EFFECT = Shades.identifier("matrix_shades");
   public static final Identifier RECEIPT_SHADES_POST_EFFECT = Shades.identifier("receipt_shades");
   public static final Identifier HALFTONE_SHADES_POST_EFFECT = Shades.identifier("halftone_shades");
   public static final Identifier LEGO_SHADES_POST_EFFECT = Shades.identifier("lego_shades");
@@ -84,6 +83,10 @@ public class ShadesClient {
   public static final Identifier FLUID_SHADES_MARKER = Shades.identifier("fluid_shades");
   public static final Identifier COPPER_SHADES_MARKER = Shades.identifier("copper_shades");
 
+  /// converted from a real post_effect (green tint + scanlines only, no live GameTime) once
+  /// falling code glyphs needed live time - see core/matrix.fsh
+  public static final Identifier MATRIX_SHADES_MARKER = Shades.identifier("matrix_shades");
+
   /// one entry per effect prism_shades can cycle through, in cycle order; item is `null` only for
   /// the index-0 "off" state. Replaces what used to be two separate parallel lists (an Identifier
   /// list and a same-order String list) kept in sync purely by matching index by hand ->  now a
@@ -106,7 +109,7 @@ public class ShadesClient {
           new Effect(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT, "Blurry"),
           new Effect(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT, "Night Vision"),
           new Effect(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT, "Thermal"),
-          new Effect(ModItems.MATRIX_SHADES, MATRIX_SHADES_POST_EFFECT, "Matrix"),
+          new Effect(ModItems.MATRIX_SHADES, MATRIX_SHADES_MARKER, "Matrix"),
           new Effect(ModItems.RECEIPT_SHADES, RECEIPT_SHADES_POST_EFFECT, "Receipt"),
           new Effect(ModItems.HALFTONE_SHADES, HALFTONE_SHADES_POST_EFFECT, "Halftone"),
           new Effect(ModItems.LEGO_SHADES, LEGO_SHADES_POST_EFFECT, "Lego"),
@@ -227,7 +230,7 @@ public class ShadesClient {
           Map.entry(STATIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.STATIC_TV, () -> null, null, () -> null)),
           Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getWorldDepthCapture, ShadesClient::buildSonarCameraRayUniform, () -> null)),
           Map.entry(GLITCH_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GLITCH, () -> null, null, () -> null)),
-          Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, null, () -> null)),
+          Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, ShadesClient::buildRainUniform, () -> null)),
           Map.entry(CURSOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.CURSOR, () -> null, ShadesClient::buildCursorUniform, () -> null)),
           Map.entry(VERTIGO_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VERTIGO, () -> null, ShadesClient::buildMotionUniform, () -> null)),
           Map.entry(ANIMATED_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ANIMATED_GLASS, () -> null, null, () -> null)),
@@ -237,7 +240,8 @@ public class ShadesClient {
           Map.entry(ORB_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ORB, () -> null, ShadesClient::buildOrbUniform, () -> null)),
           Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, ShadesClient::getWorldDepthCapture, ShadesClient::buildWaveformRayUniform, ShadesClient::getWaveformFeedback)),
           Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, ShadesClient::getWorldDepthCapture, ShadesClient::buildFluidRayUniform, () -> null)),
-          Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)));
+          Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)),
+          Map.entry(MATRIX_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MATRIX, () -> null, ShadesClient::buildMatrixUniform, () -> null)));
     }
 
     return liveEffects;
@@ -554,7 +558,19 @@ public class ShadesClient {
     return buildAspectOnlyUniform(renderPass, "CopperConfig", "shades:copper_config");
   }
 
-  /// shared by the two aspect-ratio-only uniform blocks above - each is otherwise identical to
+  /// pushes the real window aspect ratio, so rain.fsh's droplet noise field isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildRainUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "RainConfig", "shades:rain_config");
+  }
+
+  /// pushes the real window aspect ratio, so matrix.fsh's falling-glyph grid isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildMatrixUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "MatrixConfig", "shades:matrix_config");
+  }
+
+  /// shared by the four aspect-ratio-only uniform blocks above - each is otherwise identical to
   /// buildFireUniform, just under a different uniform/buffer name
   private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 

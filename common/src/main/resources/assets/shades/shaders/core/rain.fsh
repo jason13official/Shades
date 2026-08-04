@@ -1,52 +1,79 @@
 #version 330
 
-// live GameTime, same trick as plasma.fsh - original digital-rain implementation, not ported
-// from any external source (see NOTES.md Ideas for the licensing reason that mattered here)
+// reworked: the original implementation here was a digital-rain falling-glyph-column effect - a
+// cool look, but not much of a "rain" vibe, and thematically closer to what matrix_shades' new
+// falling-code overlay does now (see core/matrix.fsh). Replaced with an actual rain-on-glass look:
+// same bump-mapped noise-height technique as copper_shades' getCopper() (two overlapping noise
+// samples at different scales/scroll speeds), just retuned for bigger, slower, downward-scrolling
+// droplet-like blobs instead of copper's fine mottled texture, and a cool/clear tint instead of
+// copper's warm one. Refracts the real background same as copper_shades - looking at the world
+// through a rain-speckled pane, not replacing it
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
 
+// real window aspect ratio, pushed fresh each frame by ShadesClient
+layout(std140) uniform RainConfig {
+    float Aspect;
+};
+
 in vec2 texCoord;
 out vec4 fragColor;
 
-const vec3 RAIN_COLOR = vec3(0.15, 1.0, 0.35);
-const float COLUMNS = 60.0;
-const float ROWS = 40.0;
-const float TRAIL_LENGTH = 18.0;
+float hash2(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
 
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+float noise2(vec2 x) {
+    vec2 i = floor(x);
+    vec2 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i + vec2(0.0, 0.0)), hash2(i + vec2(1.0, 0.0)), f.x),
+        mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x),
+        f.y
+    );
+}
+
+// same shape as copper_shades' getCopper() - two overlapping noise samples at different scales,
+// scrolling straight DOWN over time (only the y offset moves) instead of copper's mostly-vertical
+// crawl, so droplets read as streaking down the glass
+float getDroplets(vec2 uv, float t) {
+    uv.x *= 2.0;
+    float t0 = noise2(uv * 2.0 - vec2(0.0, t) * 0.3);
+    float t1 = noise2(uv * 3.0 - vec2(0.0, t) * 0.6) * 0.5;
+    return smoothstep(0.35, 0.55, t0 * t1 * 2.0);
 }
 
 void main(){
 
-    float t = GameTime * 2400.0;
+    float t = GameTime * 2400.0 * 0.5;
+    vec2 uv = texCoord;
+    uv.x *= Aspect;
+    float eps = 0.004;
 
-    vec2 cell = floor(texCoord * vec2(COLUMNS, ROWS));
+    float p0 = getDroplets(uv, t);
+    float p1 = getDroplets(uv + vec2(0.0, eps), t);
+    float p2 = getDroplets(uv + vec2(eps, eps), t);
+    vec3 normal = normalize(vec3(p0 - p1, p2 - p1, 0.5));
 
-    // each column falls at its own speed and loops forever; texCoord.y=0 is the bottom of the
-    // screen (see screenquad.vsh), so a falling head means its row count decreases over time
-    float colSpeed = 4.0 + hash(vec2(cell.x, 0.0)) * 10.0;
-    float headRow = mod(ROWS - t * colSpeed * 0.1, ROWS + TRAIL_LENGTH * 2.0) - TRAIL_LENGTH;
+    // bend the real background sample through the droplets' own bumps, same "looking through
+    // wavy glass" trick copper_shades/fluted_glass_vision use
+    vec2 distortedUV = texCoord + normal.xy * 0.02;
+    vec3 scene = texture(InSampler, distortedUV).rgb;
 
-    float distBehindHead = headRow - cell.y;
+    vec3 lightDir = normalize(vec3(0.25, 0.75, 0.2) - vec3((uv - 0.5) * 2.0, 0.0));
+    float diffuse = max(dot(lightDir, normal), 0.0);
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float specular = pow(max(dot(normal, halfVec), 0.0), 40.0);
 
-    vec3 color = texture(InSampler, texCoord).rgb * 0.25;
+    // mostly clear, just a faint cool tint - real rain-on-glass barely colors what's behind it,
+    // unlike copper_shades' much stronger warm tint
+    vec3 rainTint = vec3(0.75, 0.85, 1.0);
+    vec3 outColor = scene * mix(vec3(1.0), rainTint, 0.2) * (0.8 + diffuse * 0.3) + specular * 0.5;
 
-    if (distBehindHead >= 0.0 && distBehindHead < TRAIL_LENGTH) {
-        // per-cell glyph flicker, re-rolled every half second, different phase per cell
-        float glyph = step(0.5, hash(cell + floor(t * 0.5)));
-
-        float brightness = pow(1.0 - distBehindHead / TRAIL_LENGTH, 1.5);
-        vec3 glow = RAIN_COLOR * brightness * glyph;
-
-        // the lead character flashes near-white
-        if (distBehindHead < 1.0) {
-            glow = mix(glow, vec3(0.8, 1.0, 0.9), 0.6);
-        }
-
-        color += glow;
-    }
-
-    fragColor = vec4(color, 1.0);
+    fragColor = vec4(outColor, 1.0);
 }

@@ -37,6 +37,7 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.WAVEFORM);
       event.registerPipeline(ShadesRenderPipelines.FLUID);
       event.registerPipeline(ShadesRenderPipelines.COPPER);
+      event.registerPipeline(ShadesRenderPipelines.MATRIX);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {

@@ -81,13 +81,6 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .build();
 
-  public static final RenderPipeline RAIN = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
-      .withLocation(Shades.identifier("pipeline/rain"))
-      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
-      .withFragmentShader(Shades.identifier("core/rain"))
-      .withSampler("InSampler")
-      .build();
-
   /// needs a custom "CursorConfig" uniform (mouse UV + whether a screen is open), pushed fresh
   /// each frame by `ShadesClient`
   public static final RenderPipeline CURSOR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
@@ -202,5 +195,29 @@ public class ShadesRenderPipelines {
       .withFragmentShader(Shades.identifier("core/copper"))
       .withSampler("InSampler")
       .withUniform("CopperConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// converted from a plain post_effect (green tint + scanlines only) to live so it can add
+  /// falling Matrix-code glyphs on top of that same recolor - "MatrixConfig" uniform (real window
+  /// aspect ratio) only
+  public static final RenderPipeline MATRIX = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/matrix"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/matrix"))
+      .withSampler("InSampler")
+      .withUniform("MatrixConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// reworked from the original digital-rain falling-glyph columns (that concept moved to
+  /// matrix_shades' new falling-code overlay, a better thematic fit) into a bump-mapped "rain on
+  /// glass" droplet refraction - same recipe as COPPER (see copper.fsh/rain.fsh), just retuned for
+  /// bigger, downward-scrolling droplet blobs and a cool/clear tint instead of copper's warm one.
+  /// "RainConfig" uniform (real window aspect ratio) only
+  public static final RenderPipeline RAIN = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/rain"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/rain"))
+      .withSampler("InSampler")
+      .withUniform("RainConfig", UniformType.UNIFORM_BUFFER)
       .build();
 }
