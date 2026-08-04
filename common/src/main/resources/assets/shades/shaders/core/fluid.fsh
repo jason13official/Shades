@@ -1,69 +1,80 @@
 #version 330
 
-// the pasted shadertoy script ("flockaroo"'s single-pass CFD) was only the DISPLAY pass of a
-// multi-buffer setup - it reads iChannel0 as an already-simulated velocity/height field that a
-// separate simulation-update pass (not given here) writes every frame, plus a cubemap for
-// environment reflection. Neither is available in this engine's single-pass live pipeline, so this
-// port keeps the display pass's real technique (normal-from-local-gradient + reflective shading)
-// but substitutes a minimal self-contained single-pass wave update (4-tap neighbor blur + damping
-// + a slow periodic perturbation) for the missing simulation pass, and a procedural sky gradient
-// for the missing cubemap. The wave height is smuggled through the output alpha channel (packed to
-// 0..1) rather than the visible RGB, using PrevFrameSampler as its own previous frame's state
-// exactly like waveform_shades does for its trail - see ShadesClient's fluidFeedback
+// reworked: the previous version was a from-scratch single-pass wave-sim substitute (the pasted
+// shadertoy script was only the DISPLAY pass of a multi-buffer CFD setup - the real simulation-
+// update pass was never given), reading/writing its own previous frame's height field through
+// PrevFrameSampler. In practice that home-grown sim produced unstable flat-shard artifacts rather
+// than a convincing ripple. Replaced with an analytic multi-sine ripple field sampled at each
+// pixel's real depth-reconstructed world position - same worldPos() technique grid_shades/
+// waveform_shades/sonar_shades all use, no feedback/simulation state needed at all, fully
+// deterministic. Same "look at the world through something" refraction recipe fluted_glass_vision/
+// molten_glass use, just driven by real world XZ instead of a fixed screen-space ridge pattern
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
-uniform sampler2D PrevFrameSampler;
+uniform sampler2D InDepthSampler;
 
-// real window aspect ratio, pushed fresh each frame by ShadesClient
-layout(std140) uniform FluidConfig {
-    float Aspect;
+// combined inverse-projection*view matrix + camera position, pushed fresh each frame by
+// ShadesClient - same worldPos() reconstruction sonar.fsh/grid.fsh use
+layout(std140) uniform FluidRay {
+    mat4 InverseTransformMatrix;
+    vec3 CameraPosition;
 };
 
 in vec2 texCoord;
 out vec4 fragColor;
 
-float readHeight(vec2 uv) {
-    return texture(PrevFrameSampler, uv).a * 2.0 - 1.0;
+vec3 worldPos(vec3 screenPoint) {
+    vec3 ndc = screenPoint * 2.0 - 1.0;
+    vec4 homPos = InverseTransformMatrix * vec4(ndc, 1.0);
+    return homPos.xyz / homPos.w + CameraPosition;
 }
 
-vec3 sky(vec3 dir) {
-    float h = dir.y * 0.5 + 0.5;
-    return mix(vec3(0.05, 0.08, 0.12), vec3(0.55, 0.75, 0.95), h);
+// three overlapping traveling ripples at different frequencies/speeds/directions, summed - the
+// same "layer a few sine waves" idea plasma.fsh/molten_glass.fsh's churn use, just sampled in
+// real world XZ instead of screen UV
+float heightAt(vec2 xz, float t) {
+    float h = 0.0;
+    h += sin(xz.x * 0.5 + xz.y * 0.3 + t * 1.2) * 0.5;
+    h += sin(xz.x * 0.3 - xz.y * 0.6 + t * 0.8) * 0.3;
+    h += sin(xz.x * 0.9 + xz.y * 0.9 - t * 1.6) * 0.2;
+    return h;
 }
 
 void main(){
 
     float t = GameTime * 2400.0 * 0.5;
-    vec2 texel = 1.0 / vec2(textureSize(PrevFrameSampler, 0));
+    float rawDepth = texture(InDepthSampler, texCoord).r;
 
-    // minimal single-pass wave update: average the four neighbors of our own last frame, damp it
-    // slightly so it doesn't blow up, and re-inject a slow moving perturbation so the field never
-    // fully settles - a cheap stand-in for the real simulation pass this port doesn't have
-    float up = readHeight(texCoord + vec2(0.0, texel.y));
-    float down = readHeight(texCoord - vec2(0.0, texel.y));
-    float left = readHeight(texCoord - vec2(texel.x, 0.0));
-    float right = readHeight(texCoord + vec2(texel.x, 0.0));
-    float self = readHeight(texCoord);
+    // sky/no real geometry here -> nothing to ripple, leave the pixel untouched
+    if (rawDepth >= 0.9999) {
+        fragColor = texture(InSampler, texCoord);
+        return;
+    }
 
-    float h = (up + down + left + right) * 0.25;
-    h = mix(self, h, 0.5) * 0.995;
+    vec3 surfacePos = worldPos(vec3(texCoord, rawDepth));
+    vec2 xz = surfacePos.xz;
 
-    vec2 pertPos = vec2(0.5 + sin(t * 0.23) * 0.3, 0.5 + cos(t * 0.19) * 0.3);
-    float pertDist = length((texCoord - pertPos) * vec2(Aspect, 1.0));
-    h += smoothstep(0.05, 0.0, pertDist) * 0.02 * sin(t * 3.0);
-    h = clamp(h, -1.0, 1.0);
+    // finite-difference normal from the ripple field, same approximate-gradient shortcut
+    // fluted_glass_vision/molten_glass.fsh use rather than an analytic derivative
+    float eps = 0.15;
+    float hL = heightAt(xz - vec2(eps, 0.0), t);
+    float hR = heightAt(xz + vec2(eps, 0.0), t);
+    float hD = heightAt(xz - vec2(0.0, eps), t);
+    float hU = heightAt(xz + vec2(0.0, eps), t);
+    vec3 normal = normalize(vec3(hL - hR, hD - hU, eps * 6.0));
 
-    vec2 grad = vec2(right - left, up - down) / max(texel.x, texel.y) * 0.02;
-    vec3 n = normalize(vec3(-grad, 1.0));
+    // bend the real background sample through the ripple's own bumps
+    vec2 distortedUV = texCoord + normal.xy * 0.015;
+    vec3 scene = texture(InSampler, distortedUV).rgb;
 
-    vec2 sc = (texCoord - 0.5) * vec2(Aspect, 1.0);
-    vec3 dir = normalize(vec3(sc, -1.0));
-    vec3 r = reflect(dir, n);
-    vec3 refl = sky(r);
+    vec3 lightDir = normalize(vec3(0.3, 0.6, 0.5));
+    float diffuse = max(dot(normal, lightDir), 0.0);
+    vec3 halfVec = normalize(lightDir + vec3(0.0, 0.0, 1.0));
+    float specular = pow(max(dot(normal, halfVec), 0.0), 60.0);
 
-    vec3 scene = texture(InSampler, texCoord).rgb;
-    vec3 col = mix(scene, refl, 0.6) + refl * 0.15 * n.z;
+    vec3 waterTint = vec3(0.55, 0.8, 0.95);
+    vec3 outColor = mix(scene, scene * waterTint, 0.3) * (0.7 + diffuse * 0.4) + specular * 0.6;
 
-    fragColor = vec4(col, h * 0.5 + 0.5);
+    fragColor = vec4(outColor, 1.0);
 }

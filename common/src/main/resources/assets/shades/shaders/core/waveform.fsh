@@ -1,39 +1,32 @@
 #version 330
 
-// port of an oscilloscope-line shadertoy sketch: a slowly rotating/scaling/translating sine wave
-// traced as a thin glowing line (Inigo Quilez's gradient-based signed-distance-to-curve trick),
-// colored by a cycling hue, accumulating into a fading trail. The trail needs to read back its own
-// previous frame's output - unlike every other live item here, so this one goes through
-// ShadesLiveVision's PrevFrameSampler feedback path instead of just InSampler (see ShadesClient's
-// waveformFeedback persistent target). Dropped the original's iFrame-based frame-skipping (a
-// shadertoy perf hack tuned for a fixed 60fps target - GameTime doesn't give a comparable frame
-// count, and drawing every real frame reads fine at any framerate)
+// reworked twice: v1 was a pure screen-space rotating/scaling/translating sine clip (an IQ-style
+// implicit-SDF trace) - all three motions changed too slowly to move the visible segment
+// noticeably frame-to-frame, so it read as one frozen thin streak. v2 replaced that with an
+// explicit full-width scrolling sine curve, which animated fine but had no tie to the real world.
+// This version reads real per-column world data instead of a canned formula: for each screen
+// column, sample real depth along a fixed center row to find how far above/below eye level
+// whatever's really there is, and use THAT as the signal driving the traced curve - a genuine
+// oscilloscope reading of the real world's silhouette, not a synthetic waveform laid over it.
+// Same worldPos() reconstruction grid_shades/fluid_shades/sonar_shades all use. Turning your head
+// visibly reshapes the trace since it's tracking real geometry; standing still lets the trail
+// saturate into a bright, still hue-cycling outline instead of fading - same "CRT phosphor stays
+// lit on an unchanging signal" behavior a real scope would show
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
+uniform sampler2D InDepthSampler;
 uniform sampler2D PrevFrameSampler;
 
-// real window aspect ratio, pushed fresh each frame by ShadesClient
-layout(std140) uniform WaveformConfig {
-    float Aspect;
+// combined inverse-projection*view matrix + camera position, pushed fresh each frame by
+// ShadesClient - same worldPos() reconstruction sonar.fsh/grid.fsh use
+layout(std140) uniform WaveformRay {
+    mat4 InverseTransformMatrix;
+    vec3 CameraPosition;
 };
 
 in vec2 texCoord;
 out vec4 fragColor;
-
-#define PI 3.14159265359
-
-float sinNorm(float x) {
-    return sin(x) * 0.5 + 0.5;
-}
-
-float rand(float seed) {
-    return fract(sin(dot(vec2(seed, seed / PI), vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-float smoothVal(float x, float maxX) {
-    return clamp(smoothstep(0.0, 1.0, x / maxX) * (1.0 - smoothstep(0.0, 1.0, x / maxX)) * 4.0, 0.0, 1.0);
-}
 
 vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -41,67 +34,40 @@ vec3 hsv2rgb(vec3 c) {
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-float smoothRand(float t, float interval, float seed) {
-    float next = rand(1.0 + floor(t / interval) + seed);
-    float curr = rand(floor(t / interval) + seed);
-    return mix(curr, next, fract(t / interval));
-}
-
-float waveF(vec2 point, float t) {
-    return sin(point.x * 2.0 + t * 1.275) + point.y;
-}
-
-vec2 waveGrad(vec2 point, float t) {
-    vec2 h = vec2(0.01, 0.0);
-    return vec2(
-        waveF(point + h.xy, t) - waveF(point - h.xy, t),
-        waveF(point + h.yx, t) - waveF(point - h.yx, t)
-    ) / (2.0 * h.x);
-}
-
-float lineColor(vec2 point, float t, float lineWidthPx) {
-    float v = waveF(point, t);
-    vec2 g = waveGrad(point, t);
-    float de = abs(v) / length(g);
-    float normalizedLineRadius = lineWidthPx * 0.5;
-    return 1.0 - clamp(smoothstep(0.0, normalizedLineRadius, de), 0.0, 1.0);
+vec3 worldPos(vec3 screenPoint) {
+    vec3 ndc = screenPoint * 2.0 - 1.0;
+    vec4 homPos = InverseTransformMatrix * vec4(ndc, 1.0);
+    return homPos.xyz / homPos.w + CameraPosition;
 }
 
 void main(){
 
     float t = GameTime * 2400.0 * 0.5;
 
-    vec2 point = (texCoord - 0.5) * 2.0;
-    point.x *= Aspect;
+    // one real-world sample per column, always along a fixed center row -> the value that drives
+    // the traced curve at this x, regardless of which row we're actually shading right now
+    float refDepth = texture(InDepthSampler, vec2(texCoord.x, 0.5)).r;
 
-    // scale/rotate/translate the sample space smoothly over time - this is what makes the traced
-    // line drift/breathe instead of sitting static
-    float z = mix(0.5, 1.5, smoothRand(t, 2.0, 0.0));
-    point /= z;
-
-    float rot = smoothRand(t, 0.5, 354.856) * PI;
-    point = vec2(cos(rot) * point.x + sin(rot) * point.y, -sin(rot) * point.x + cos(rot) * point.y);
-
-    point.x += smoothRand(t, 1.0, 842.546) * 2.0 - 1.0;
-
-    float lineLength = 0.25 + smoothRand(t, 4.0, 0.846) * 0.25 + 0.25;
-    float linePoint = (point.x + lineLength * 0.5) / lineLength;
-    float lineWidth = mix(0.01, 0.05, smoothVal(linePoint * 100.0, 100.0)) / max(z, 0.001);
-
-    vec3 trace = vec3(0.0);
-    if (point.x >= -lineLength * 0.5 && point.x <= lineLength * 0.5) {
-        trace = vec3(lineColor(point, t, lineWidth));
+    float signal = 0.0;
+    if (refDepth < 0.9999) {
+        vec3 refPos = worldPos(vec3(texCoord.x, 0.5, refDepth));
+        // real height relative to eye level, normalized into a soft -1..1 range
+        signal = clamp((refPos.y - CameraPosition.y) / 10.0, -1.0, 1.0);
     }
 
-    trace *= hsv2rgb(vec3(fract(t / 7.0), sinNorm(t * 0.73) * 0.4 + 0.6, 1.0));
-    trace += pow((trace.r + trace.g + trace.b) / 3.0 + 0.25, 3.0) - pow(0.25, 3.0);
+    float waveY = 0.5 + signal * 0.3;
+    float dist = abs(texCoord.y - waveY);
+    float core = 1.0 - smoothstep(0.0, 0.0035, dist);
+    float glow = exp(-dist * 60.0) * 0.5;
 
-    float decay = sinNorm(t * 0.789) * 0.5 + 0.25;
+    vec3 traceColor = hsv2rgb(vec3(fract(t / 6.0 + texCoord.x * 0.2), 0.75, 1.0));
+    vec3 trace = traceColor * (core + glow);
+
     vec3 prev = texture(PrevFrameSampler, texCoord).rgb;
-    vec3 accumulated = clamp(trace + prev * decay, 0.0, 1.0);
+    vec3 accumulated = clamp(trace + prev * 0.85, 0.0, 1.0);
 
     vec3 scene = texture(InSampler, texCoord).rgb;
-    vec3 outColor = max(scene * 0.35, accumulated);
+    vec3 outColor = max(scene * 0.4, accumulated);
 
     fragColor = vec4(outColor, 1.0);
 }

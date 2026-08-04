@@ -163,28 +163,32 @@ public class ShadesRenderPipelines {
       .withUniform("OrbConfig", UniformType.UNIFORM_BUFFER)
       .build();
 
-  /// oscilloscope trace with a fading trail ->  needs "PrevFrameSampler" (this effect's own
-  /// previous frame, see ShadesLiveVision's feedback-target overload) alongside the usual
-  /// InSampler, plus a "WaveformConfig" uniform (real window aspect ratio)
+  /// oscilloscope trace of the real world's silhouette (depth-reconstructed world height per
+  /// column, see waveform.fsh) with a fading trail - needs "InDepthSampler" (shared
+  /// worldDepthCapture, same as SONAR/GRID) + "PrevFrameSampler" (this effect's own previous
+  /// frame, see ShadesLiveVision's feedback-target overload) alongside InSampler, plus a
+  /// "WaveformRay" uniform (combined inverse-projection*view matrix + camera position)
   public static final RenderPipeline WAVEFORM = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/waveform"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
       .withFragmentShader(Shades.identifier("core/waveform"))
       .withSampler("InSampler")
+      .withSampler("InDepthSampler")
       .withSampler("PrevFrameSampler")
-      .withUniform("WaveformConfig", UniformType.UNIFORM_BUFFER)
+      .withUniform("WaveformRay", UniformType.UNIFORM_BUFFER)
       .build();
 
-  /// single-pass wave-sim liquid surface ->  also needs "PrevFrameSampler" (the sim's own previous
-  /// frame's height field, packed into alpha ->  see fluid.fsh) plus a "FluidConfig" uniform (real
-  /// window aspect ratio)
+  /// analytic multi-sine ripple field sampled at real depth-reconstructed world position (see
+  /// fluid.fsh) - needs "InDepthSampler" (shared worldDepthCapture) plus a "FluidRay" uniform
+  /// (combined inverse-projection*view matrix + camera position); no feedback needed, fully
+  /// deterministic unlike the simulation-substitute this replaced
   public static final RenderPipeline FLUID = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/fluid"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
       .withFragmentShader(Shades.identifier("core/fluid"))
       .withSampler("InSampler")
-      .withSampler("PrevFrameSampler")
-      .withUniform("FluidConfig", UniformType.UNIFORM_BUFFER)
+      .withSampler("InDepthSampler")
+      .withUniform("FluidRay", UniformType.UNIFORM_BUFFER)
       .build();
 
   /// procedurally-noised bump-mapped copper foil, refracting/tinting the real InSampler

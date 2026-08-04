@@ -235,8 +235,8 @@ public class ShadesClient {
           Map.entry(FIRE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FIRE, () -> null, ShadesClient::buildFireUniform, () -> null)),
           Map.entry(GRID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRID, ShadesClient::getWorldDepthCapture, ShadesClient::buildGridRayUniform, () -> null)),
           Map.entry(ORB_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ORB, () -> null, ShadesClient::buildOrbUniform, () -> null)),
-          Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, () -> null, ShadesClient::buildWaveformUniform, ShadesClient::getWaveformFeedback)),
-          Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, () -> null, ShadesClient::buildFluidUniform, ShadesClient::getFluidFeedback)),
+          Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, ShadesClient::getWorldDepthCapture, ShadesClient::buildWaveformRayUniform, ShadesClient::getWaveformFeedback)),
+          Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, ShadesClient::getWorldDepthCapture, ShadesClient::buildFluidRayUniform, () -> null)),
           Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)));
     }
 
@@ -247,8 +247,8 @@ public class ShadesClient {
   /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -
   /// see that mixin's doc comment for why mainTarget's own depth can't be read directly by the
   /// time doGameRender runs later in the same frame. Originally sonar_shades-only, now shared with
-  /// grid_shades too - captureWorldDepth() runs unconditionally every frame regardless of which
-  /// item is worn, so any effect needing real depth can just read this
+  /// grid_shades/waveform_shades/fluid_shades too - captureWorldDepth() runs unconditionally every
+  /// frame regardless of which item is worn, so any effect needing real depth can just read this
   private static RenderTarget worldDepthCapture;
 
   public static void captureWorldDepth() {
@@ -274,22 +274,14 @@ public class ShadesClient {
     return worldDepthCapture != null ? worldDepthCapture.getDepthTextureView() : null;
   }
 
-  /// persistent color-only feedback buffers for effects that need their own previous frame's
-  /// output back (see ShadesLiveVision's feedbackTarget overload) ->  kept as separate fields, not
-  /// one shared buffer, so switching between waveform_shades/fluid_shades (e.g. mid-Prism-cycle)
-  /// can't leak one effect's trail/simulation state into the other's, same isolation reasoning as
-  /// the smoothedSway* vs. smoothedSpeed/smoothedTurn fields below
+  /// persistent color-only feedback buffer for waveform_shades' trail (see ShadesLiveVision's
+  /// feedbackTarget overload) - fluid_shades used to have its own (fluidFeedback) but no longer
+  /// needs one now that it's a deterministic analytic ripple field instead of a self-simulation
   private static RenderTarget waveformFeedback;
-  private static RenderTarget fluidFeedback;
 
   private static RenderTarget getWaveformFeedback() {
     waveformFeedback = ensureFeedbackTarget(waveformFeedback);
     return waveformFeedback;
-  }
-
-  private static RenderTarget getFluidFeedback() {
-    fluidFeedback = ensureFeedbackTarget(fluidFeedback);
-    return fluidFeedback;
   }
 
   /// (re)allocates a persistent color-only target sized to the main target, cleared to opaque
@@ -494,6 +486,25 @@ public class ShadesClient {
   /// worldPos() technique buildSonarCameraRayUniform uses, just without a ping origin (every
   /// column bounces on its own hashed phase instead of sweeping from a fixed point)
   private static GpuBuffer buildGridRayUniform(RenderPass renderPass) {
+    return buildWorldRayUniform(renderPass, "GridRay", "shades:grid_ray");
+  }
+
+  /// pushes a combined inverse-projection*view matrix + camera position, so waveform.fsh can read
+  /// real per-column world height for its traced curve - same worldPos() technique grid.fsh uses
+  private static GpuBuffer buildWaveformRayUniform(RenderPass renderPass) {
+    return buildWorldRayUniform(renderPass, "WaveformRay", "shades:waveform_ray");
+  }
+
+  /// pushes a combined inverse-projection*view matrix + camera position, so fluid.fsh can sample
+  /// its ripple field at real world XZ position instead of a fixed screen-space pattern
+  private static GpuBuffer buildFluidRayUniform(RenderPass renderPass) {
+    return buildWorldRayUniform(renderPass, "FluidRay", "shades:fluid_ray");
+  }
+
+  /// shared by the three world-position-reconstruction uniform blocks above - each is otherwise
+  /// identical to buildSonarCameraRayUniform, just without a ping origin and under a different
+  /// uniform/buffer name
+  private static GpuBuffer buildWorldRayUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 
     CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
 
@@ -505,8 +516,8 @@ public class ShadesClient {
           .putMat4f(inverseTransform)
           .putVec3((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
 
-      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:grid_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
-      renderPass.setUniform("GridRay", buffer);
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> bufferLabel, GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform(uniformName, buffer);
       return buffer;
     }
   }
@@ -517,25 +528,13 @@ public class ShadesClient {
     return buildAspectOnlyUniform(renderPass, "OrbConfig", "shades:orb_config");
   }
 
-  /// pushes the real window aspect ratio, so waveform.fsh's traced line isn't stretched on a
-  /// non-square window
-  private static GpuBuffer buildWaveformUniform(RenderPass renderPass) {
-    return buildAspectOnlyUniform(renderPass, "WaveformConfig", "shades:waveform_config");
-  }
-
-  /// pushes the real window aspect ratio, so fluid.fsh's perturbation/reflection math isn't
-  /// stretched on a non-square window
-  private static GpuBuffer buildFluidUniform(RenderPass renderPass) {
-    return buildAspectOnlyUniform(renderPass, "FluidConfig", "shades:fluid_config");
-  }
-
   /// pushes the real window aspect ratio, so copper.fsh's light-direction calc isn't skewed on a
   /// non-square window
   private static GpuBuffer buildCopperUniform(RenderPass renderPass) {
     return buildAspectOnlyUniform(renderPass, "CopperConfig", "shades:copper_config");
   }
 
-  /// shared by the five aspect-ratio-only uniform blocks above ->  each is otherwise identical to
+  /// shared by the two aspect-ratio-only uniform blocks above - each is otherwise identical to
   /// buildFireUniform, just under a different uniform/buffer name
   private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 

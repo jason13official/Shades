@@ -46,8 +46,7 @@ public class ShadesLiveVision {
   /// ->  a genuine persistent ping-pong buffer, unlike `resourcePool`'s scratch targets, which are
   /// explicitly cleared on every acquire (see `RenderTargetDescriptor#prepare`) and so can't carry
   /// content across frames. The target itself is caller-owned (see ShadesClient's
-  /// waveformFeedback/fluidFeedback) so switching items can't leak one effect's trail into
-  /// another's
+  /// waveformFeedback) so switching items can't leak one effect's trail into another's
   public static void process(CrossFrameResourcePool resourcePool, RenderPipeline pipeline, GpuTextureView depthView,
       Function<RenderPass, GpuBuffer> extraUniforms, RenderTarget feedbackTarget) {
 
