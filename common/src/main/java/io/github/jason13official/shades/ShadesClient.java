@@ -186,7 +186,7 @@ public class ShadesClient {
 
       while (CYCLE_PRISM_KEY.consumeClick()) {
         if (c2s != null) {
-          c2s.accept(new CyclePrismC2SPacket());
+          c2s.accept(new CyclePrismC2SPacket(mc.hasShiftDown()));
         }
       }
 
