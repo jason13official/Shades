@@ -1,12 +1,9 @@
 #version 330
 
-// abstracted from a full-scene raymarched noise-sphere (the original port of "Perlin Noise
-// Sphere" by Johannes Diemke) into a single roaming translucent lens over the real world - the
-// raymarched version replaced the whole screen with a synthetic render, which reads as "you're
-// looking at outer space" rather than "you're looking at the real world through something." This
-// reuses molten_glass_shades' fisheye-through-a-blob technique (one blob instead of eight), with
-// noise3 (a procedural hash-lattice value-noise, same shape as the original's own snoise) driving
-// an organic churning silhouette instead of molten_glass's per-angle radius wobble
+// a single roaming translucent lens over the real world, reusing molten_glass's
+// fisheye-through-a-blob technique (one blob instead of eight); noise3 (a procedural hash-lattice
+// value-noise) drives an organic churning silhouette instead of molten_glass's per-angle radius
+// wobble
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -67,9 +64,8 @@ void main(){
     float falloff = clamp(1.0 - distSq / (radius * radius), 0.0, 1.0);
     float influence = falloff * falloff * falloff;
 
-    // pull the sample toward the blob's center - a classic spherical-lens compression, same
-    // bendFactor trick molten_glass.fsh uses, so the world visibly bulges/magnifies through the
-    // orb instead of just tinting flatly on top
+    // pull the sample toward the blob's center, same bendFactor trick molten_glass.fsh uses, so
+    // the world visibly bulges/magnifies through the orb instead of just tinting flatly on top
     vec2 toCenter = texCoord - center;
     float bendFactor = mix(1.0, 1.0 - FISHEYE_STRENGTH, influence);
     vec2 distortedUV = center + toCenter * bendFactor;
@@ -81,11 +77,11 @@ void main(){
     float churn = noise3(vec3(distortedUV * 5.0, t * 0.5));
     vec3 tint = mix(vec3(0.1, 0.55, 0.5), vec3(0.5, 1.0, 0.85), churn);
 
-    // capped well below 1 so even the orb's densest core stays translucent - real world always
+    // capped well below 1 so even the orb's densest core stays translucent; real world always
     // shows through, more so toward the blob's edge
     vec3 blended = mix(scene, tint, influence * 0.7);
 
-    // approximate lens normal, radially outward from the blob's center - same cheap shortcut
+    // approximate lens normal, radially outward from the blob's center; same cheap shortcut
     // molten_glass.fsh uses instead of a real finite-difference gradient
     vec2 aspectToCenter = toCenter;
     aspectToCenter.x *= Aspect;

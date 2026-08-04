@@ -16,12 +16,10 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 
-/// hand-rolled equivalent of a single `PostPass`, for shaders that need live `GameTime` -> 
+/// hand-rolled equivalent of a single `PostPass`, for shaders that need live `GameTime`;
 /// `PostChain`/`PostPass` always build from `POST_PROCESSING_SNIPPET` alone, never combined with
-/// `GLOBALS_SNIPPET`, so a real `post_effect` JSON never gets it. Copies the current frame into a
-/// scratch target (avoids a read/write hazard), draws one fullscreen triangle with a
-/// GLOBALS_SNIPPET-combined pipeline sampling that copy, writes back into the real target.
-///
+/// `GLOBALS_SNIPPET`. Copies the current frame into a scratch target, draws one fullscreen
+/// triangle with a GLOBALS_SNIPPET-combined pipeline sampling that copy, writes back to the real target
 /// @see ShadesRenderPipelines
 public class ShadesLiveVision {
 
@@ -29,32 +27,27 @@ public class ShadesLiveVision {
     process(resourcePool, pipeline, depthView, null);
   }
 
-  /// `depthView`, if given, is bound as `InDepthSampler` -> > pass the real main target's depth
-  /// only if it's known-fresh at this point in the frame (see GameRendererMixin's
-  /// shades$captureWorldDepth for why that's often not true anymore by our hook)
-  ///
-  /// `extraUniforms`, if given, runs right before the draw call -> > it should bind whatever custom
-  /// uniform(s) the pipeline needs and return the GpuBuffer it created, so this method can close
-  /// it once the draw is done (built fresh every frame, not pooled like PostPass's own uniforms)
+  /// `depthView`, if given, is bound as `InDepthSampler`; pass the real main target's depth only
+  /// if it's known-fresh at this point in the frame. `extraUniforms`, if given, runs right before
+  /// the draw call to bind whatever custom uniform(s) the pipeline needs, returning the GpuBuffer
+  /// it created so this method can close it once the draw is done
   public static void process(CrossFrameResourcePool resourcePool, RenderPipeline pipeline, GpuTextureView depthView,
       Function<RenderPass, GpuBuffer> extraUniforms) {
     process(resourcePool, pipeline, depthView, extraUniforms, null);
   }
 
   /// `feedbackTarget`, if given, is bound as `PrevFrameSampler` (this effect's own previous
-  /// frame's output) before the draw, then overwritten with this frame's fresh result right after
-  /// ->  a genuine persistent ping-pong buffer, unlike `resourcePool`'s scratch targets, which are
-  /// explicitly cleared on every acquire (see `RenderTargetDescriptor#prepare`) and so can't carry
-  /// content across frames. The target itself is caller-owned (see ShadesClient's
-  /// waveformFeedback) so switching items can't leak one effect's trail into another's
+  /// frame's output) before the draw, then overwritten with this frame's fresh result right after -
+  /// a genuine persistent ping-pong buffer, unlike `resourcePool`'s scratch targets, which are
+  /// cleared on every acquire and can't carry content across frames
   public static void process(CrossFrameResourcePool resourcePool, RenderPipeline pipeline, GpuTextureView depthView,
       Function<RenderPass, GpuBuffer> extraUniforms, RenderTarget feedbackTarget) {
 
     Minecraft mc = Minecraft.getInstance();
     RenderTarget mainTarget = mc.getMainRenderTarget();
 
-    // scratch copy of the current frame's color -> our input sampler. No depth needed on this one;
-    // we only ever read from it below, never write into it
+    // scratch copy of the current frame's color -> our input sampler; only ever read from below,
+    // never written into
     RenderTargetDescriptor descriptor = new RenderTargetDescriptor(mainTarget.width, mainTarget.height, false, 0);
     RenderTarget scratch = resourcePool.acquire(descriptor);
 
@@ -65,7 +58,7 @@ public class ShadesLiveVision {
     SamplerCache samplerCache = RenderSystem.getSamplerCache();
     GpuSampler sampler = samplerCache.getClampToEdge(FilterMode.LINEAR);
 
-    // no depth attachment -> this pass never depth-tests/writes, and binding the same texture as
+    // no depth attachment; this pass never depth-tests/writes, and binding the same texture as
     // both a render-target attachment and a sampled input at once is a resource hazard
     GpuBuffer extraBuffer = null;
     try (RenderPass renderPass = commandEncoder.createRenderPass(
@@ -93,8 +86,8 @@ public class ShadesLiveVision {
       }
     }
 
-    // capture this frame's freshly-drawn result for next frame's PrevFrameSampler read -> done
-    // after the render pass closes, so we're never reading and writing the same texture at once
+    // capture this frame's result for next frame's PrevFrameSampler read, after the render pass
+    // closes so we're never reading and writing the same texture at once
     if (feedbackTarget != null) {
       commandEncoder.copyTextureToTexture(
           mainTarget.getColorTexture(), feedbackTarget.getColorTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);

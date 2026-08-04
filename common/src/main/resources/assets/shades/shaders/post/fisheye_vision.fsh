@@ -15,7 +15,7 @@ void main(){
 
     // classic barrel-distortion polynomial: bend how far out we sample as a cubic function of
     // distance from center, then re-project along the same direction. Flattest right at the
-    // center and at the very edge, most curved in between - same shape a real curved lens bends
+    // center and at the very edge, most curved in between; same shape a real curved lens bends
     // light into
     float distortedDist = dist + STRENGTH * dist * dist * dist;
     vec2 distortedUV = vec2(0.5) + normalize(fromCenter + 1e-6) * distortedDist;

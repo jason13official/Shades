@@ -18,15 +18,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-/// sunglasses overlay riding the player's head whenever any of the shades items (see [ModItems]) is worn;
-/// since those items carry no `Equippable` asset, vanilla's HumanoidArmorLayer never renders this
-///
-///
-/// ( ^ plus [io.github.jason13official.shades.mixin.CustomHeadLayerMixin] suppressing
-/// vanilla's generic decorative-head-item fallback) is the only thing drawn on the head for it
-///
-/// gated on [ShadesRenderStateExtension] rather than `state.headEquipment`;
-/// headEquipment is `ItemStack.EMPTY` for us unconditionally
+/// sunglasses overlay riding the player's head whenever a shades item is worn; those items carry
+/// no `Equippable` asset, so vanilla's HumanoidArmorLayer never renders anything for them. Gated
+/// on [ShadesRenderStateExtension] rather than `state.headEquipment`, which is always empty for us
 /// @see ShadesRenderStateExtension
 public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 
@@ -37,10 +31,8 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
     this.model = new ShadesVisorModel(ShadesVisorModel.createLayer().bakeRoot());
   }
 
-  /// every item's visor texture lives at `{id}_visor.png` (same pixel mask, only fill colors
-  /// differ) except plasma_shades, which has no static texture at all since its
-  /// lens is the live shader itself; derives the path from [ModItems#idOf] instead of keeping a
-  /// duplicate 29-entry map in lockstep with ModItems' fields
+  /// every item's visor texture lives at `{id}_visor.png`, except plasma_shades, whose lens is
+  /// the live shader itself and has no static texture
   private static Identifier textureFor(Item item) {
 
     if (item == ModItems.PLASMA_SHADES) {
@@ -73,13 +65,10 @@ public class ShadesVisorLayer extends RenderLayer<AvatarRenderState, PlayerModel
     RenderType renderType;
     if (ShadesClient.isPlasmaSelected(headItem)) {
 
-      // the lens itself is the shader here; no texture fed in just the live plasma pattern
-      // we could possibly separate this into two submitModel calls to have the arms on the old static entityTranslucent path,
-      // and only the lens on plasma. Safe to feed ModelPart-baked geometry into a POSITION_TEX_COLOR-only pipeline:
-      // ModelPart.Cube#compile() always calls the full addVertex(pos, color, uv, overlay, light, normal) overload;
-      // a default method that just chains the individual setters ->
-      // a reduced-format buffer (ours has no overlay/light/normal slots) simply drops the ones
-      // it has no room for, same as any RenderType built from a smaller vertex format
+      // the lens itself is the shader here, no texture fed in; safe to feed ModelPart-baked
+      // geometry into a POSITION_TEX_COLOR-only pipeline since Cube#compile()'s full addVertex
+      // overload just chains individual setters, and a reduced-format buffer drops the ones it
+      // has no room for
       renderType = ShadesRenderPipelines.plasma();
     } else {
       Identifier texture = textureFor(item);

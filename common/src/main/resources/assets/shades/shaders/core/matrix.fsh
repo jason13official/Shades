@@ -1,13 +1,8 @@
 #version 330
 
-// converted from a plain post_effect (green luma tint + scanlines, no live time) to a live core
-// pipeline so it can add actual falling "Matrix code" glyphs on top - a post_effect JSON can never
-// get live GameTime, so the falling-glyph part needed this move. The glyph
-// generator (rchar/matrixRain below) is a port of a shadertoy-style digital-rain sketch; the
-// original just replaced the whole screen with the glyph field, which would violate this mod's
-// own "modify how you see the world, don't replace it" rule -> so here the
-// glyphs are ADDED on top of the same green-luma-tint+scanline recolor the old post_effect did,
-// real scene still fully legible underneath, tinted, with code raining over it
+// green luma tint + scanlines, same as before, with falling Matrix-code glyphs (rchar/matrixRain
+// below) ADDED on top instead of replacing the screen; real scene stays fully legible underneath,
+// tinted, with code raining over it
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -42,7 +37,7 @@ float rchar(vec2 outer, vec2 inner) {
 }
 
 // falling code columns: each column (ipos.x) gets its own fall speed via randomF(), the whole
-// column's row index increments over time - a soft radial glow is added per-cell so the glyphs
+// column's row index increments over time; a soft radial glow is added per-cell so the glyphs
 // don't read as flat squares
 vec3 matrixRain(vec2 st, float seconds) {
 
@@ -63,17 +58,15 @@ vec3 matrixRain(vec2 st, float seconds) {
 
 void main(){
 
-    // GameTime advances 2 units/real-second (see plasma.fsh's writeup) - halve it back down to a
-    // real-seconds-equivalent so the fall speed below matches the original reference's iTime-based
-    // pacing
+    // GameTime advances 2 units/real-second; halve it back down to a real-seconds-equivalent
     float seconds = GameTime * 2400.0 * 0.5;
 
     vec4 diffuseColor = texture(InSampler, texCoord);
     float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
     vec3 green = vec3(luma) * TINT;
 
-    // fixed scanline frequency rather than real pixel rows - SamplerInfo (OutSize/InSize) isn't
-    // available in a live ShadesLiveVision pass, only real post_effect passes
+    // fixed scanline frequency rather than real pixel rows; a real screen-pixel-based frequency
+    // isn't available in a live pass the way it is in a real post_effect pass
     float scanline = fract(texCoord.y * 240.0);
     green *= (1.0 - step(scanline, 0.5) * SCANLINE_STRENGTH);
 

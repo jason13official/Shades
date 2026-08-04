@@ -13,11 +13,9 @@ public class Services {
 
     Constants.LOG.info("Loading service {}", clazz);
 
-    // A merged multi-loader jar carries every platform's provider entry in
-    // META-INF/services, so ServiceLoader can hand back a provider whose
-    // backing classes aren't on this platform's classpath. Touch a real
-    // platform call per candidate - the wrong one throws NoClassDefFoundError
-    // here, and we skip to the next entry instead of crashing.
+    // a merged multi-loader jar carries every platform's provider entry, so ServiceLoader can
+    // hand back one whose backing classes aren't on this platform's classpath; touch a real
+    // platform call per candidate so the wrong one throws here and we skip to the next entry
     for (T helper : ServiceLoader.load(clazz)) {
       try {
         boolean dev = helper instanceof IPlatformHelper platform && platform.isDevelopmentEnvironment();

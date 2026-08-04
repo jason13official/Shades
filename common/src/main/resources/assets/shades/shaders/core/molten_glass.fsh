@@ -1,18 +1,16 @@
 #version 330
 
-// back to round, soft lava-lamp blobs (Wyvill-style bounded falloff, same as the well-liked
-// earlier version) instead of streams - but now each blob is also a genuine fisheye/lens bulge:
-// wherever a blob dominates a pixel, the sample position gets pulled toward that blob's center
-// (a classic spherical-lens compression), so looking at a blob visibly warps and magnifies the
-// world behind/around it, not just its own rim. Color is the same clear -> orange -> red ->
-// white-hot ramp the streams version introduced, with a little plasma churn for inner life
+// round, soft lava-lamp blobs (Wyvill-style bounded falloff), each also a genuine fisheye/lens
+// bulge: wherever a blob dominates a pixel, the sample position gets pulled toward that blob's
+// center (a spherical-lens compression), so looking at one visibly warps/magnifies the world
+// behind it. Color follows a clear -> orange -> red -> white-hot ramp with plasma churn mixed in
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
 
 // real window aspect ratio + a smoothed screen-space sway opposite the camera's current yaw/pitch
-// swing, pushed fresh each frame by ShadesClient#buildGlassUniform - the whole blob field lags
-// behind a camera turn like it has real weight, then eases back as the turn settles
+// swing; the whole blob field lags behind a camera turn like it has real weight, then eases back
+// as the turn settles
 layout(std140) uniform GlassConfig {
     float Aspect;
     float SwayX;
@@ -26,9 +24,8 @@ const int BLOB_COUNT = 8;
 const float FISHEYE_STRENGTH = 0.45;
 const float NORMAL_STRENGTH = 0.6;
 
-// identical recipe to plasma.fsh's main() body - see that file for the full per-line writeup.
-// used here as a subtle churning inner light inside the molten blobs, so they don't read as a
-// flat color ramp
+// same sum-of-sines recipe plasma.fsh uses, reused here as a subtle churning inner light inside
+// the molten blobs, so they don't read as a flat color ramp
 vec3 plasmaColor(vec2 uv, float t) {
 
     vec2 p = uv * 6.0;
@@ -63,15 +60,15 @@ vec3 hotRamp(float s) {
 }
 
 // each blob's base position/radius, driven only by its index and time (plus the camera-sway
-// offset) - a single source of truth so every pass below agrees on where a blob actually is
+// offset); a single source of truth so every pass below agrees on where a blob actually is
 vec2 blobPos(int i, float t, out float radius) {
 
     float fi = float(i);
     // an irrational-ish per-blob offset so blobs don't rise/sway/pulse in lockstep
     float seed = fi * 2.399963;
 
-    // loops from just below the screen to just above it and wraps - real lava lamp blobs sink
-    // again after cooling at the top, but a one-way loop reads close enough and needs no state
+    // loops from just below the screen to just above it and wraps; a one-way loop reads close
+    // enough to a real lava lamp's rise-and-cool cycle and needs no state
     float riseSpeed = 0.02 + 0.005 * fi;
     float riseT = fract(t * riseSpeed + seed * 0.61803);
     float y = mix(-0.3, 1.3, riseT);
@@ -83,10 +80,9 @@ vec2 blobPos(int i, float t, out float radius) {
     return vec2(x + SwayX, y + SwayY);
 }
 
-// classic metaball field, using the smooth Wyvill/Blinn bounded falloff (x^3, x = 1 at the blob's
-// center fading smoothly to 0 at its edge) instead of a raw inverse-square, which is what makes
-// the blob edges genuinely soft. Also tracks the single most-dominant blob at this pixel (highest
-// influence) - that blob is what the fisheye bulge below centers on
+// classic metaball field using the smooth Wyvill/Blinn bounded falloff (x^3, 1 at the blob's
+// center fading to 0 at its edge) instead of a raw inverse-square, for genuinely soft edges. Also
+// tracks the single most-dominant blob at this pixel; that blob is what the fisheye bulge centers on
 void fieldAt(vec2 uv, float t, out float heat, out vec2 dominantPos, out float dominantRadius, out float dominantInfluence) {
 
     heat = 0.0;
@@ -105,9 +101,8 @@ void fieldAt(vec2 uv, float t, out float heat, out vec2 dominantPos, out float d
         vec2 d = uv - pos;
         d.x *= Aspect;
 
-        // bend the radius per-angle instead of using it as-is - two overlapping wobble
-        // frequencies, slowly writhing over time, turn what would otherwise be a perfect circle
-        // into an amorphous, slightly lumpy blob silhouette, like a real glob of wax
+        // bend the radius per-angle; two overlapping wobble frequencies, slowly writhing over
+        // time, turn what would otherwise be a perfect circle into a lumpy blob silhouette
         float angle = atan(d.y, d.x);
         float wobble = 1.0
             + 0.16 * sin(angle * 3.0 + seed * 5.1 + t * 0.08)
@@ -136,9 +131,9 @@ void main(){
     vec2 dominantPos;
     fieldAt(texCoord, t, heatCenter, dominantPos, dominantRadius, dominantInfluence);
 
-    // pull the sample position toward the dominant blob's center - a classic spherical-lens
-    // compression, strongest exactly at the center and easing to none past the blob's edge, so
-    // the world visibly bulges/magnifies through each blob instead of just refracting at its rim
+    // pull the sample position toward the dominant blob's center; strongest exactly at the
+    // center and easing to none past the blob's edge, so the world visibly bulges/magnifies
+    // through each blob instead of just refracting at its rim
     vec2 toCenter = texCoord - dominantPos;
     float bendFactor = mix(1.0, 1.0 - FISHEYE_STRENGTH, dominantInfluence);
     vec2 distortedUV = dominantPos + toCenter * bendFactor;
@@ -158,17 +153,17 @@ void main(){
     hot = mix(hot, hot * (0.6 + churn * 0.8), 0.3 * heat);
 
     // capped below 1.0 so even a blob's own white-hot core stays translucent instead of a flat
-    // opaque cutout - heat itself (uncapped) still drives the color ramp, just not the opacity
+    // opaque cutout; heat itself (uncapped) still drives the color ramp, just not the opacity
     vec3 blended = mix(scene, hot, heat * 0.8);
 
     // an approximate lens normal, pointing away from the dominant blob's center, scaled by how
-    // dominant it is - good enough for a specular glint without needing a real analytic gradient
+    // dominant it is; good enough for a specular glint without a real analytic gradient
     vec2 aspectToCenter = toCenter;
     aspectToCenter.x *= Aspect;
     vec3 normal = normalize(vec3(-(aspectToCenter / max(dominantRadius, 0.001)) * dominantInfluence * NORMAL_STRENGTH, 1.0));
 
     // light slowly orbits, so the specular glint sweeps over time instead of pinning to one
-    // direction - gated mostly (not entirely) by heat, so clear glass still shows a faint shine
+    // direction; gated mostly (not entirely) by heat, so clear glass still shows a faint shine
     vec3 lightDir = normalize(vec3(sin(t * 0.15) * 0.6 - 0.2, 0.5, 0.75));
     float diffuse = max(dot(normal, lightDir), 0.0);
     vec3 viewDir = vec3(0.0, 0.0, 1.0);

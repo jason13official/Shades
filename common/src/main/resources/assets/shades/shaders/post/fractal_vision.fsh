@@ -25,7 +25,7 @@ void main(){
 
     vec2 texel = 1.0 / InSize;
 
-    // see neon_vision.fsh for the full Sobel-kernel writeup - identical edge magnitude
+    // same 3x3 Sobel edge magnitude neon_vision.fsh uses
     float tl = luma(texCoord + texel * vec2(-1.0,  1.0));
     float  t = luma(texCoord + texel * vec2( 0.0,  1.0));
     float tr = luma(texCoord + texel * vec2( 1.0,  1.0));

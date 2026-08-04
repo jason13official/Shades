@@ -10,22 +10,10 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.phys.Vec3;
 
 /// a translucent, GameTime-animated quad covering the camera's own near clip plane whenever
-/// plasma_shades is worn, or prism_shades is worn and cycled to the Plasma option (see
-/// ShadesClient#isPlasmaSelected); this is the "cheat" for a full-screen-looking effect the
-/// `post_effect` system structurally can't give us.
-///
-/// Anchored to the CAMERA itself (via Camera#getNearPlane,
-/// sized to the player's actual FOV setting) rather than the player's eyes,
-/// so it fills the view the same way in first person, third-person back, AND third-person
-/// front/selfie mode; same as every other pair of glasses' real post-processing effect does in
-/// every camera mode, just achieved through real world-space geometry instead of a post pass.
-///
-/// `ShadesVisorLayer` still separately renders the actual worn lens model too (using this same
-/// `ShadesRenderPipelines.plasma()` RenderType) ->  that's what OTHER players see on us; this quad
-/// only ever exists relative to OUR OWN camera, so it's invisible from anyone else's viewpoint.
-///
-/// Local player only; extending this to other visible players wouldn't make sense here anyway -> 
-/// you only ever look through your own camera
+/// plasma_shades is worn (or prism_shades cycled to Plasma); a full-screen-looking effect the
+/// `post_effect` system can't give us otherwise. Anchored to the camera itself and sized to the
+/// real FOV, so it fills every camera mode; local player only, since this quad only ever exists
+/// relative to our own camera and is invisible to anyone else
 /// @see ShadesRenderPipelines
 public class ShadesPlasmaEffect {
 
@@ -45,8 +33,8 @@ public class ShadesPlasmaEffect {
     Camera camera = mc.gameRenderer.getMainCamera();
     Camera.NearPlane nearPlane = camera.getNearPlane(mc.options.fov().get());
 
-    // these are camera-relative offsets already (not world positions) - exactly the space
-    // level-render geometry is submitted in, no further translation needed
+    // these are camera-relative offsets already (not world positions); the same space level-render
+    // geometry is submitted in, no further translation needed
     Vec3 topLeft = nearPlane.getTopLeft().scale(NEAR_PLANE_PUSH);
     Vec3 topRight = nearPlane.getTopRight().scale(NEAR_PLANE_PUSH);
     Vec3 bottomLeft = nearPlane.getBottomLeft().scale(NEAR_PLANE_PUSH);

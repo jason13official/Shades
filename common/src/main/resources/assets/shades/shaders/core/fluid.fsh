@@ -1,21 +1,15 @@
 #version 330
 
-// reworked: the previous version was a from-scratch single-pass wave-sim substitute (the pasted
-// shadertoy script was only the DISPLAY pass of a multi-buffer CFD setup - the real simulation-
-// update pass was never given), reading/writing its own previous frame's height field through
-// PrevFrameSampler. In practice that home-grown sim produced unstable flat-shard artifacts rather
-// than a convincing ripple. Replaced with an analytic multi-sine ripple field sampled at each
-// pixel's real depth-reconstructed world position - same worldPos() technique grid_shades/
-// waveform_shades/sonar_shades all use, no feedback/simulation state needed at all, fully
-// deterministic. Same "look at the world through something" refraction recipe fluted_glass_vision/
-// molten_glass use, just driven by real world XZ instead of a fixed screen-space ridge pattern
+// an analytic multi-sine ripple field sampled at each pixel's real depth-reconstructed world
+// position, fully deterministic, no feedback/simulation state needed. Same "look at the world
+// through something" refraction recipe fluted_glass_vision/molten_glass use, just driven by real
+// world XZ instead of a fixed screen-space ridge pattern
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
 uniform sampler2D InDepthSampler;
 
-// combined inverse-projection*view matrix + camera position, pushed fresh each frame by
-// ShadesClient - same worldPos() reconstruction sonar.fsh/grid.fsh use
+// combined inverse-projection*view matrix + camera position, pushed fresh each frame
 layout(std140) uniform FluidRay {
     mat4 InverseTransformMatrix;
     vec3 CameraPosition;
@@ -30,9 +24,8 @@ vec3 worldPos(vec3 screenPoint) {
     return homPos.xyz / homPos.w + CameraPosition;
 }
 
-// three overlapping traveling ripples at different frequencies/speeds/directions, summed - the
-// same "layer a few sine waves" idea plasma.fsh/molten_glass.fsh's churn use, just sampled in
-// real world XZ instead of screen UV
+// three overlapping traveling ripples at different frequencies/speeds/directions, summed; same
+// "layer a few sine waves" idea plasma.fsh uses, just sampled in real world XZ instead of screen UV
 float heightAt(vec2 xz, float t) {
     float h = 0.0;
     h += sin(xz.x * 0.5 + xz.y * 0.3 + t * 1.2) * 0.5;

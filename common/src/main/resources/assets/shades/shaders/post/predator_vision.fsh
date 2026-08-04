@@ -1,7 +1,7 @@
 #version 330
 
-// thermal_vision's heat ramp + neon_vision's Sobel edge glow, combined - the heat ramp reads the
-// scene, the edge pass outlines silhouettes on top of it, same "predator thermal" look
+// thermal_vision's heat ramp + neon_vision's Sobel edge glow, combined; the heat ramp reads the
+// scene, the edge pass outlines silhouettes on top of it, for a "predator thermal" look
 
 uniform sampler2D InSampler;
 
@@ -16,7 +16,7 @@ out vec4 fragColor;
 
 const vec3 OUTLINE_COLOR = vec3(0.5, 1.0, 0.4);
 
-// see thermal_vision.fsh for the full band-by-band writeup - identical ramp
+// same 5-band ramp thermal_vision.fsh uses
 vec3 heatRamp(float t) {
 
     vec3 c0 = vec3(0.0, 0.0, 0.05);
@@ -40,7 +40,7 @@ float luma(vec2 uv) {
 
 void main(){
 
-    // see neon_vision.fsh for the full Sobel-kernel writeup - identical edge magnitude
+    // same 3x3 Sobel edge magnitude neon_vision.fsh uses
     vec2 texel = 1.0 / InSize;
 
     float tl = luma(texCoord + texel * vec2(-1.0,  1.0));

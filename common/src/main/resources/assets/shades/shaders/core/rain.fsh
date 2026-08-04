@@ -1,13 +1,9 @@
 #version 330
 
-// reworked: the original implementation here was a digital-rain falling-glyph-column effect - a
-// cool look, but not much of a "rain" vibe, and thematically closer to what matrix_shades' new
-// falling-code overlay does now (see core/matrix.fsh). Replaced with an actual rain-on-glass look:
-// same bump-mapped noise-height technique as copper_shades' getCopper() (two overlapping noise
-// samples at different scales/scroll speeds), just retuned for bigger, slower, downward-scrolling
-// droplet-like blobs instead of copper's fine mottled texture, and a cool/clear tint instead of
-// copper's warm one. Refracts the real background same as copper_shades - looking at the world
-// through a rain-speckled pane, not replacing it
+// rain-on-glass: same bump-mapped noise-height technique as copper_shades' getCopper() (two
+// overlapping noise samples at different scales/scroll speeds), retuned for bigger, slower,
+// downward-scrolling droplet-like blobs and a cool/clear tint instead of copper's warm one.
+// Refracts the real background, looking at the world through a rain-speckled pane
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -37,9 +33,8 @@ float noise2(vec2 x) {
     );
 }
 
-// same shape as copper_shades' getCopper() - two overlapping noise samples at different scales,
-// scrolling straight DOWN over time (only the y offset moves) instead of copper's mostly-vertical
-// crawl, so droplets read as streaking down the glass
+// same shape as copper_shades' getCopper(), two overlapping noise samples at different scales,
+// scrolling straight DOWN over time (only the y offset moves) so droplets read as streaking
 float getDroplets(vec2 uv, float t) {
     uv.x *= 2.0;
     float t0 = noise2(uv * 2.0 - vec2(0.0, t) * 0.3);
@@ -70,7 +65,7 @@ void main(){
     vec3 halfVec = normalize(lightDir + viewDir);
     float specular = pow(max(dot(normal, halfVec), 0.0), 40.0);
 
-    // mostly clear, just a faint cool tint - real rain-on-glass barely colors what's behind it,
+    // mostly clear, just a faint cool tint; real rain-on-glass barely colors what's behind it,
     // unlike copper_shades' much stronger warm tint
     vec3 rainTint = vec3(0.75, 0.85, 1.0);
     vec3 outColor = scene * mix(vec3(1.0), rainTint, 0.2) * (0.8 + diffuse * 0.3) + specular * 0.5;

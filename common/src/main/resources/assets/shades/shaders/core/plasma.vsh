@@ -1,7 +1,7 @@
 #version 330
 
 // unlike our post_effect shaders (screenquad.vsh, always the same 4 screen corners), this one
-// actually transforms real 3D vertices - see ShadesPlasmaEffect for what geometry gets fed in
+// actually transforms real 3D vertices fed in by ShadesPlasmaEffect
 #moj_import <minecraft:projection.glsl>
 #moj_import <minecraft:dynamictransforms.glsl>
 

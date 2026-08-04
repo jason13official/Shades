@@ -1,7 +1,6 @@
 #version 330
 
-// live GameTime, same trick as plasma.fsh - see ShadesLiveVision for how this pass gets driven
-// by hand instead of through PostChain
+// live GameTime, same trick as plasma.fsh, driven by hand instead of through PostChain
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -18,8 +17,8 @@ void main(){
     float t = GameTime * 2400.0;
 
     // chop the screen into a handful of horizontal bands that re-roll on every "beat"; each band
-    // gets its own random sideways offset - most stay put, a few slide hard - reads as a
-    // signal tear instead of one continuous wave
+    // gets its own random sideways offset, most stay put, a few slide hard, reading as a signal
+    // tear instead of one continuous wave
     float bandCount = 12.0;
     float band = floor(texCoord.y * bandCount);
     float beat = floor(t * 2.0);

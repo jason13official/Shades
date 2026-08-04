@@ -37,6 +37,6 @@ void main(){
     float gy = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
     float edge = clamp(length(vec2(gx, gy)), 0.0, 1.0);
 
-    // everything that isn't an edge reads as near-black, edges glow in TINT - a "scanner"/X-ray look
+    // everything that isn't an edge reads as near-black, edges glow in TINT, for a scanner/X-ray look
     fragColor = vec4(TINT * edge, 1.0);
 }

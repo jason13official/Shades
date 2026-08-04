@@ -5,9 +5,8 @@
 
 uniform sampler2D InSampler;
 
-// pushed fresh each frame by ShadesClient - real cursor position when a screen (chat/inventory/
-// etc.) is open, since the level+PostChain pass runs before the GUI pass (confirmed via decomp),
-// the effect stays visible behind a translucent screen
+// real cursor position when a screen (chat/inventory/etc.) is open; the level+PostChain pass runs
+// before the GUI pass, so the effect stays visible behind a translucent screen
 layout(std140) uniform CursorConfig {
     float ScreenOpen;
     vec2 CursorUv;

@@ -14,7 +14,7 @@ void main(){
     float radius = length(fromCenter);
     float angle = atan(fromCenter.y, fromCenter.x);
 
-    // fold the angle into one wedge, then mirror the second half back onto the first - repeating
+    // fold the angle into one wedge, then mirror the second half back onto the first; repeating
     // that single wedge around the circle is what makes it read as a kaleidoscope
     float wedge = 2.0 * PI / SEGMENTS;
     float folded = mod(angle, wedge);

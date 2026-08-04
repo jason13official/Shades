@@ -1,9 +1,7 @@
 #version 330
 
-// fluted_glass_vision's derivative-as-normal refraction trick (see that file for the full
-// per-line writeup), but core/GLOBALS_SNIPPET-driven instead of a static post_effect JSON, so
-// the ridges can actually scroll and the light can sweep over real time instead of being frozen
-// at whatever phase they loaded with
+// fluted_glass_vision's derivative-as-normal refraction trick, live so the ridges can actually
+// scroll and the light can sweep over real time instead of being frozen at load-time phase
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -19,7 +17,7 @@ void main(){
 
     float t = GameTime * 2400.0;
 
-    // same ridge shape as fluted_glass_vision, but the phase drifts sideways over time - the
+    // same ridge shape as fluted_glass_vision, but the phase drifts sideways over time so the
     // ridges themselves crawl across the screen instead of sitting still
     float flutePosition = fract(texCoord.x * FLUTE_COUNT + t * 0.4);
     float slope = cos(flutePosition * PI * 2.0) * PI;

@@ -1,12 +1,9 @@
 #version 330
 
-// port of a bump-mapped "copper foil" shadertoy sketch - two overlapping noise samples at
-// different scales/scroll speeds combine into a mottled height field. The original samples a
-// precomputed noise texture (iChannel0); this engine's live pass has no spare texture channel for
-// that, so a 2D value-noise function (same smoothstep-interpolated hash-lattice shape) stands in
-// for it instead. The height field drives a refraction + tint + specular pass over the real scene
-// (same recipe as fluted_glass_vision/animated_glass), not a fully synthetic lit render - the
-// point is to look at the world through wavy tinted copper foil, not to replace the world with foil
+// bump-mapped "copper foil": two overlapping noise samples at different scales/scroll speeds
+// combine into a mottled height field (procedural, no texture channel needed), driving a
+// refraction + tint + specular pass over the real scene, same recipe as fluted_glass_vision;
+// looking at the world through wavy tinted copper foil, not replacing the world with foil
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -56,9 +53,8 @@ void main(){
     float p2 = getCopper(uv + vec2(eps, eps), t);
     vec3 normal = normalize(vec3(p0 - p1, p2 - p1, 0.5));
 
-    // bend the real background sample through the foil's own bumps - same "looking through wavy
-    // glass" trick fluted_glass_vision uses, just driven by this noise height field instead of a
-    // sine ridge
+    // bend the real background sample through the foil's own bumps, same "looking through wavy
+    // glass" trick fluted_glass_vision uses, just driven by this noise height field
     vec2 distortedUV = texCoord + normal.xy * 0.02;
     vec3 scene = texture(InSampler, distortedUV).rgb;
 

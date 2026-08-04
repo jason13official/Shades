@@ -1,19 +1,14 @@
 #version 330
 
-// reworked per feedback: was a raymarched fake floor + orbiting sphere replacing the whole
-// screen; now uses real depth-reconstructed world position instead (same worldPos() technique
-// sonar.fsh uses - ShadesClient pushes the same combined inverse-projection*view matrix + camera
-// position, see buildGridRayUniform). Every real block on screen gets grid-snapped by its actual
-// world XZ column and bounces up and down in place, screen-space-displaced by its real distance
-// from the camera - this modifies how the real world looks instead of replacing it with an
-// unrelated scene, unlike this file's first version
+// real depth-reconstructed world position, grid-snapped by its actual world XZ column; every real
+// block on screen bounces up and down in place, screen-space-displaced by its real distance from
+// the camera
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
 uniform sampler2D InDepthSampler;
 
-// combined inverse-projection*view matrix + camera position, pushed fresh each frame by
-// ShadesClient - same worldPos() reconstruction sonar.fsh uses, just no ping origin needed
+// combined inverse-projection*view matrix + camera position, pushed fresh each frame
 layout(std140) uniform GridRay {
     mat4 InverseTransformMatrix;
     vec3 CameraPosition;
@@ -57,9 +52,8 @@ void main(){
     float height = sin(t * BOUNCE_SPEED + phase) * BOUNCE_AMOUNT;
 
     // the same world-space bounce needs to shrink in screen space the farther the block is from
-    // the camera, same intuition as real perspective; texCoord.y=0 is the bottom of the screen
-    // (see screenquad.vsh), so a positive world-space rise shifts the sample DOWN to pull the
-    // block's true appearance UP into view
+    // the camera; texCoord.y=0 is the bottom of the screen, so a positive world-space rise shifts
+    // the sample DOWN to pull the block's true appearance UP into view
     float camDist = max(length(surfacePos - CameraPosition), 0.5);
     float screenShift = height / camDist * 0.4;
 

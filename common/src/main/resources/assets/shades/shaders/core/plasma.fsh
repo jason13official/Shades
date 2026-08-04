@@ -1,10 +1,8 @@
 #version 330
 
-// this is the payoff for the whole custom-pipeline detour: post-processing shaders (everything
-// else in this mod) never get this import, since PostPass always builds its pipeline from
-// POST_PROCESSING_SNIPPET alone. This one gets composed with GLOBALS_SNIPPET in
-// ShadesRenderPipelines, so it's wired to the SAME live uniform buffer every entity/particle/
-// portal shader reads from - GameTime updates every real frame, not once at shader-load time
+// composed with GLOBALS_SNIPPET in ShadesRenderPipelines, so this is wired to the same live
+// uniform buffer every entity/particle/portal shader reads from; GameTime updates every real
+// frame here, not once at shader-load time like a real post_effect JSON would get
 #moj_import <minecraft:globals.glsl>
 
 in vec2 texCoord0;
@@ -14,10 +12,8 @@ out vec4 fragColor;
 
 void main() {
 
-    // GameTime loops 0..1 once per in-game day (24000 ticks, 20 real minutes at normal speed) -
-    // multiply it back up into a fast-moving clock, playing the same role u_time plays in a
-    // Book of Shaders sketch (there it's real elapsed seconds; here it's "elapsed ticks", just a
-    // different unit for the same idea: a number that climbs every frame, smoothly, forever)
+    // GameTime loops 0..1 once per in-game day; multiply it back up into a fast-moving clock, a
+    // number that climbs every frame, smoothly, forever
     float t = GameTime * 2400.0;
 
     // texCoord0 is 0..1 across our single quad (see ShadesPlasmaEffect); scale it up so the
@@ -36,9 +32,9 @@ void main() {
     v += sin(length(swirl) * 2.0 - t);                        // ...driving expanding rings from it
     v *= 0.25; // 4 waves summed to roughly -4..4 -> squash back down to roughly -1..1
 
-    // feed v through three sine waves 120 degrees (2*PI/3) out of phase with each other - as v
-    // sweeps through its range, the three channels peak at different moments, which is what
-    // makes the color cycle through a full rainbow instead of just fading one flat tint in/out
+    // feed v through three sine waves 120 degrees out of phase with each other; as v sweeps
+    // through its range, the three channels peak at different moments, cycling a full rainbow
+    // instead of just fading one flat tint in/out
     vec3 color = vec3(
         sin(v * 3.14159 + 0.0),
         sin(v * 3.14159 + 2.094),

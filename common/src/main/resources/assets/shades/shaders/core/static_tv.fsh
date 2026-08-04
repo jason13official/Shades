@@ -1,7 +1,7 @@
 #version 330
 
-// live GameTime, same trick as plasma.fsh - see ShadesLiveVision for how this pass gets driven
-// by hand instead of through PostChain (which structurally can't give a post_effect shader this)
+// live GameTime, same trick as plasma.fsh; a real post_effect shader can't get this, since
+// PostChain always builds its pipeline without GLOBALS_SNIPPET
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler; // copy of the current frame's color, taken before this pass runs
@@ -15,8 +15,7 @@ float hash(vec2 p) {
 
 void main(){
 
-    // see plasma.fsh for why this multiplier - turns the slow 0..1 GameTime loop back into a
-    // fast-moving clock
+    // turns the slow 0..1 GameTime loop back into a fast-moving clock
     float t = GameTime * 2400.0;
 
     // occasional whole-frame vertical jump: near-zero most of the time, briefly kicking in right
@@ -25,7 +24,7 @@ void main(){
     float jump = step(0.97, beat) * (hash(vec2(floor(t * 0.15), 0.0)) - 0.5) * 0.1;
 
     // per-scanline horizontal jitter: a handful of rows get sampled slightly sideways each beat,
-    // most rows untouched - reads as analog signal noise rather than one clean wave
+    // most rows untouched; reads as analog signal noise rather than one clean wave
     float rowSeed = floor(texCoord.y * 90.0);
     float rowNoise = hash(vec2(rowSeed, floor(t * 8.0)));
     float jitter = (rowNoise - 0.5) * step(0.92, rowNoise) * 0.05;

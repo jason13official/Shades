@@ -96,16 +96,16 @@ public class ModItems {
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 
-  /// every item registered via [#registerShades] below, in registration order -> > single choke
-  /// point so ModTabs/CustomHeadLayerMixin don't each need their own duplicate 29-item list
+  /// every item registered via [#registerShades] below, in registration order; a single choke
+  /// point so ModTabs/CustomHeadLayerMixin don't need their own duplicate item list
   private static final List<Item> ALL_SHADES = new ArrayList<>();
 
-  /// each item's own registered id string, keyed back from the Item -> > lets ShadesVisorLayer
-  /// derive `{id}_visor.png` texture paths instead of keeping a duplicate 29-entry map
+  /// each item's own registered id string, keyed back from the Item; lets ShadesVisorLayer derive
+  /// `{id}_visor.png` texture paths without a duplicate map
   private static final Map<Item, String> IDS_BY_ITEM = new LinkedHashMap<>();
 
-  /// no ArmorMaterial/asset -> > own visor cosmetic (client renderer) is the only thing rendered on the head,
-  /// and ShadesClient#doGameRender picks a post-processing chain per item once worn
+  /// no ArmorMaterial/asset; the custom visor cosmetic is the only thing rendered on the head,
+  /// and ShadesClient picks a post-processing chain per item once worn
   private static Item registerShades(String id, BiConsumer<Item, Identifier> consumer) {
 
     Item item = register(id,

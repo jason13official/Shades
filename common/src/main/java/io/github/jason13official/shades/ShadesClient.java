@@ -62,11 +62,11 @@ public class ShadesClient {
   public static final Identifier PREDATOR_SHADES_POST_EFFECT = Shades.identifier("predator_shades");
   public static final Identifier FRACTAL_SHADES_POST_EFFECT = Shades.identifier("fractal_shades");
 
-  /// sentinel -> > plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
+  /// sentinel -> plasma_shades has no real post_effect JSON; doGameRender skips it entirely, the
   /// visual comes from ShadesVisorLayer's lens model + ShadesPlasmaEffect's camera quad instead
   public static final Identifier PLASMA_SHADES_MARKER = Shades.identifier("plasma_shades");
 
-  /// sentinels for items needing live GameTime (post_effect JSON can't provide it) -> > doGameRender
+  /// sentinels for items needing live GameTime (post_effect JSON can't provide it) -> doGameRender
   /// routes these to ShadesLiveVision's hand-rolled pass instead of PostChain
   public static final Identifier STATIC_SHADES_MARKER = Shades.identifier("static_shades");
   public static final Identifier SONAR_SHADES_MARKER = Shades.identifier("sonar_shades");
@@ -84,14 +84,13 @@ public class ShadesClient {
   public static final Identifier COPPER_SHADES_MARKER = Shades.identifier("copper_shades");
 
   /// converted from a real post_effect (green tint + scanlines only, no live GameTime) once
-  /// falling code glyphs needed live time - see core/matrix.fsh
+  /// falling code glyphs needed live time to animate
   public static final Identifier MATRIX_SHADES_MARKER = Shades.identifier("matrix_shades");
   public static final Identifier MIRAGE_SHADES_MARKER = Shades.identifier("mirage_shades");
 
-  /// one entry per effect prism_shades can cycle through, in cycle order; item is `null` only for
-  /// the index-0 "off" state. Replaces what used to be two separate parallel lists (an Identifier
-  /// list and a same-order String list) kept in sync purely by matching index by hand ->  now a
-  /// single ordered list makes that pairing impossible to desync
+  /// one entry per prism_shades cycle position, in order; `item` is `null` only for the index-0
+  /// "off" state. A single list instead of two parallel ones, so the id/displayName pairing can't
+  /// desync by index the way the old two-list version could
   private record Effect(Item item, Identifier id, String displayName) {}
 
   /// lazy, same reason as postEffectsByItem below: ModItems' fields aren't set yet at
@@ -158,9 +157,8 @@ public class ShadesClient {
   public static void init() {
   }
 
-  /// derived from effects() -> > every item except the "off" sentinel (null item) and plasma_shades
-  /// (that one's routed to the live shader lens/quad instead of a post_effect chain, see
-  /// doGameRender's PLASMA_SHADES_MARKER check)
+  /// derived from effects() -> every item except the "off" sentinel (null item) and plasma_shades,
+  /// which routes to the live shader lens/quad instead of a post_effect chain
   private static Map<Item, Identifier> postEffectsByItem() {
 
     if (postEffectsByItem == null) {
@@ -214,12 +212,9 @@ public class ShadesClient {
     }
   }
 
-  /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels' doc comment) -> >
-  /// `depth` is a Supplier since sonar_shades' depth capture is refreshed every frame
-  /// (getWorldDepthCapture()) rather than a fixed value; `extraUniforms` mirrors
-  /// ShadesLiveVision#process's own optional hook, `null` where an effect needs no custom uniform;
-  /// `feedback` likewise mirrors its feedbackTarget hook, `() -> > null` where an effect has no
-  /// trail/self-simulation needing its own previous frame back (see waveform_shades/fluid_shades)
+  /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels above). `depth`,
+  /// `extraUniforms`, and `feedback` are suppliers so an effect can opt into real depth, a custom
+  /// per-frame uniform, or a ping-pong trail; `() -> null` / `null` where it doesn't need one
   private record LiveEffect(RenderPipeline pipeline, Supplier<GpuTextureView> depth, Function<RenderPass, GpuBuffer> extraUniforms,
       Supplier<RenderTarget> feedback) {}
 
@@ -250,12 +245,9 @@ public class ShadesClient {
     return liveEffects;
   }
 
-  /// persistent (not scratch-pool) copy of the real depth buffer, refreshed via
-  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -
-  /// see that mixin's doc comment for why mainTarget's own depth can't be read directly by the
-  /// time doGameRender runs later in the same frame. Originally sonar_shades-only, now shared with
-  /// grid_shades/waveform_shades/fluid_shades too - captureWorldDepth() runs unconditionally every
-  /// frame regardless of which item is worn, so any effect needing real depth can just read this
+  /// persistent copy of the real depth buffer, refreshed by GameRendererMixin's
+  /// shades$captureWorldDepth right before the item-in-hand render clears the real one. Runs every
+  /// frame regardless of worn item, so sonar/grid/waveform/fluid_shades all just read this
   private static RenderTarget worldDepthCapture;
 
   public static void captureWorldDepth() {
@@ -281,9 +273,8 @@ public class ShadesClient {
     return worldDepthCapture != null ? worldDepthCapture.getDepthTextureView() : null;
   }
 
-  /// persistent color-only feedback buffer for waveform_shades' trail (see ShadesLiveVision's
-  /// feedbackTarget overload) - fluid_shades used to have its own (fluidFeedback) but no longer
-  /// needs one now that it's a deterministic analytic ripple field instead of a self-simulation
+  /// persistent color-only feedback buffer holding waveform_shades' previous frame, for its
+  /// fading trail
   private static RenderTarget waveformFeedback;
 
   private static RenderTarget getWaveformFeedback() {
@@ -312,9 +303,8 @@ public class ShadesClient {
     return existing;
   }
 
-  /// world position the sonar ping currently expands from -> > re-anchored once per ping cycle (see
-  /// buildSonarCameraRayUniform) instead of sliding with the player every frame, same "propagate
-  /// from a fixed point" idea orbital_railgun uses for its strike position
+  /// world position the sonar ping currently expands from -> re-anchored once per ping cycle
+  /// instead of sliding with the player every frame
   private static Vec3 sonarPingOrigin;
   private static long sonarPingCycle = -1;
 
@@ -372,10 +362,8 @@ public class ShadesClient {
     }
   }
 
-  /// smoothed 0..1 factors driving vertigo.fsh -> > raw speed/turn are noisy per-frame, so each is
-  /// eased toward its target every frame rather than applied directly (same "ease toward a target
-  /// instead of snapping" idea as Adaptive-Armor's SprintMomentum buildup, just a plain
-  /// exponential filter here since this is purely a local visual, not synced game state)
+  /// smoothed 0..1 factors driving vertigo.fsh; raw speed/turn are noisy per-frame, so each is
+  /// eased toward its target every frame via a plain exponential filter instead of applied directly
   private static float smoothedSpeed = 0.0f;
   private static float smoothedTurn = 0.0f;
   private static float previousYaw = Float.NaN;
@@ -403,7 +391,7 @@ public class ShadesClient {
     smoothedSpeed += (rawSpeed - smoothedSpeed) * 0.15f;
     smoothedTurn += (rawTurn - smoothedTurn) * 0.25f;
 
-    // normalize against roughly sprint-speed/fast-turn baselines, clamp so the shader always gets a 0..1 range
+    // normalize against roughly sprint-speed/fast-turn baselines, clamp to 0..1
     float speedFactor = Math.min(smoothedSpeed / 0.35f, 1.0f);
     float turnFactor = Math.min(smoothedTurn / 15.0f, 1.0f);
 
@@ -418,19 +406,16 @@ public class ShadesClient {
     }
   }
 
-  /// smoothed yaw/pitch delta driving molten_glass.fsh's blob sway ->  same eased-toward-target
-  /// idea as vertigo's smoothedSpeed/smoothedTurn, kept as separate fields so switching between
-  /// vertigo_shades and molten_glass_shades (e.g. mid-Prism-cycle) can't cause one effect's
-  /// smoothing state to jump-start the other's
+  /// smoothed yaw/pitch delta driving molten_glass.fsh's blob sway; kept as separate fields from
+  /// vertigo's so switching items mid-cycle can't jump-start one effect's smoothing from the other's
   private static float smoothedSwayYaw = 0.0f;
   private static float smoothedSwayPitch = 0.0f;
   private static float previousGlassYaw = Float.NaN;
   private static float previousGlassPitch = Float.NaN;
 
-  /// pushes the real window aspect ratio (see molten_glass.fsh's GlassConfig doc) plus a
-  /// smoothed screen-space sway offset opposite the direction the camera is currently swinging -> 
-  /// the blobs lag behind a camera turn like they've got real inertia, then drift back to center
-  /// as the turn eases off, same buildup/decay-by-easing idea as vertigo's buildMotionUniform
+  /// pushes the real window aspect ratio plus a smoothed screen-space sway offset opposite the
+  /// camera's current turn direction -> the blobs lag behind like they have real inertia, then
+  /// drift back to center as the turn eases off
   private static GpuBuffer buildGlassUniform(RenderPass renderPass) {
 
     Minecraft mc = Minecraft.getInstance();
@@ -489,19 +474,15 @@ public class ShadesClient {
   }
 
   /// pushes a combined inverse-projection*view matrix + camera position, so grid.fsh can
-  /// reconstruct real world-space position per pixel and grid-snap by real block columns - same
-  /// worldPos() technique buildSonarCameraRayUniform uses, just without a ping origin (every
-  /// column bounces on its own hashed phase instead of sweeping from a fixed point)
+  /// reconstruct real world-space position per pixel and grid-snap by real block columns; every
+  /// column bounces on its own hashed phase instead of sweeping from a fixed point
   private static GpuBuffer buildGridRayUniform(RenderPass renderPass) {
     return buildWorldRayUniform(renderPass, "GridRay", "shades:grid_ray");
   }
 
-  /// pushes both the inverse-projection*view matrix (worldPos(), same as the others) AND the
-  /// non-inverted projection*view matrix, so waveform.fsh can also go the other direction -
-  /// forward-project a world point (the scan altitude's crossing plane, straight ahead of the
-  /// camera) back into screen space, to find which real screen row the full-screen crossing flash
-  /// belongs at. Without this the flash was pinned to a hardcoded row (0.5) and didn't move as the
-  /// camera's pitch or the scan altitude itself changed
+  /// pushes both the inverse-projection*view matrix (worldPos(), screen->world) and the
+  /// non-inverted one (world->screen), so waveform.fsh can forward-project the scan altitude's
+  /// crossing plane to find its real screen row; without it the flash stayed pinned to row 0.5
   private static GpuBuffer buildWaveformRayUniform(RenderPass renderPass) {
 
     CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
@@ -528,9 +509,8 @@ public class ShadesClient {
     return buildWorldRayUniform(renderPass, "FluidRay", "shades:fluid_ray");
   }
 
-  /// shared by the three world-position-reconstruction uniform blocks above - each is otherwise
-  /// identical to buildSonarCameraRayUniform, just without a ping origin and under a different
-  /// uniform/buffer name
+  /// shared by the three world-position-reconstruction uniform blocks above; each just needs a
+  /// different uniform/buffer name
   private static GpuBuffer buildWorldRayUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 
     CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
@@ -579,8 +559,8 @@ public class ShadesClient {
     return buildAspectOnlyUniform(renderPass, "MirageConfig", "shades:mirage_config");
   }
 
-  /// shared by the five aspect-ratio-only uniform blocks above - each is otherwise identical to
-  /// buildFireUniform, just under a different uniform/buffer name
+  /// shared by the five aspect-ratio-only uniform blocks above; each just needs a different
+  /// uniform/buffer name
   private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 
     Window window = Minecraft.getInstance().getWindow();
@@ -596,12 +576,9 @@ public class ShadesClient {
     }
   }
 
-  /// true when plasma_shades is worn directly, OR prism_shades is worn and currently cycled to
-  /// the plasma option -> > used by ShadesVisorLayer/ShadesPlasmaEffect to pick the live
-  /// GameTime-driven plasma RenderType instead of their normal per-item behavior.
-  ///
-  /// takes the real head-slot stack (not just the Item) since the cycle position now lives on
-  /// [ModComponents#PRISM_CYCLE_INDEX] -> > correct for other tracked players too, not just us
+  /// true when plasma_shades is worn directly, or prism_shades is worn and currently cycled to
+  /// the plasma option. Takes the real head-slot stack rather than just the Item, since the cycle
+  /// position lives on the stack's own PRISM_CYCLE_INDEX component
   public static boolean isPlasmaSelected(ItemStack headStack) {
 
     Item headItem = headStack.getItem();

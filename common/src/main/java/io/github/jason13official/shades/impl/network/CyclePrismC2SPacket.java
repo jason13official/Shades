@@ -12,9 +12,8 @@ import net.minecraft.world.item.ItemStack;
 
 /// sent whenever the wearer presses [ShadesClient#CYCLE_PRISM_KEY]; server validates prism_shades
 /// is still worn, then advances [ModComponents#PRISM_CYCLE_INDEX] on the real equipped stack.
-///
-/// Since we use `networkSynchronized`, that mutation reaches other tracking players via vanilla's
-/// normal equipment-sync path, and reaches the wearer's own client via the normal container-slot sync
+/// Since that component is `networkSynchronized`, the mutation reaches other tracking players via
+/// vanilla's normal equipment-sync path, and the wearer via the normal container-slot sync
 public record CyclePrismC2SPacket() implements CustomPacketPayload {
 
   public static final Type<CyclePrismC2SPacket> TYPE = new Type<>(Shades.identifier("cycle_prism"));

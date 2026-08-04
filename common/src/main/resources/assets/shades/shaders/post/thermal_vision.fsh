@@ -30,7 +30,7 @@ void main(){
     // sample the color at the given pixel coord
     vec4 diffuseColor = texture(InSampler, texCoord);
 
-    // use brightness (luma) as the "temperature" driving the color ramp - bright things
+    // use brightness (luma) as the "temperature" driving the color ramp; bright things
     // (sky, lava, glowstone) read as hot, dark things read as cold
     float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 

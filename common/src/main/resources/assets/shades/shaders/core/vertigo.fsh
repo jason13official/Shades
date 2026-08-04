@@ -7,8 +7,8 @@
 
 uniform sampler2D InSampler;
 
-// pushed fresh each frame by ShadesClient -> smoothed 0..1 factors derived from the player's real
-// horizontal movement speed and yaw turn rate (see buildMotionUniform's buildup/decay smoothing)
+// pushed fresh each frame -> smoothed 0..1 factors derived from the player's real horizontal
+// movement speed and yaw turn rate
 layout(std140) uniform MotionConfig {
     float Speed;
     float Turn;

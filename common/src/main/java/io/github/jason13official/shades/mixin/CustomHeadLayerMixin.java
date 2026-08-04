@@ -19,19 +19,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/// vanilla treats any head-slot item without an `Equippable` asset as a generic decorative head item,
-/// renders its flat item icon via this layer (see LivingEntityRenderer#extractRenderState, the
-/// `!HumanoidArmorLayer.shouldRender(headItem, HEAD)` branch)
-///
-/// [ModItems#BASIC_SHADES] deliberately carries no asset (so vanilla's HumanoidArmorLayer renders nothing)
-///
-/// it would otherwise get caught by that same fallback and render its inventory icon floating on the head.
-/// cancel it specifically for our item instead of giving it a real (empty) equipment asset
-///
-/// gated on [ShadesRenderStateExtension] rather than `state.headEquipment`/`headItem`
-/// @see net.minecraft.client.renderer.entity.LivingEntityRenderer
+/// vanilla treats any head-slot item without an `Equippable` asset as a generic decorative head
+/// item and renders its flat item icon via this layer; shades items deliberately carry no asset,
+/// so without this they'd get caught by that fallback and render their inventory icon floating on
+/// the head. Cancels it for our items instead, gated on [ShadesRenderStateExtension]
 /// @see net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer#shouldRender(ItemStack, EquipmentSlot)
-/// @see ModItems
 /// @see ShadesRenderStateExtension
 @Mixin(CustomHeadLayer.class)
 public abstract class CustomHeadLayerMixin<S extends LivingEntityRenderState, M extends EntityModel<S> & HeadedModel> {

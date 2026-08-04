@@ -1,12 +1,9 @@
 #version 330
 
-// bulges/dents the real world based on a live plasma color field, instead of rendering the plasma
-// pattern itself - reuses plasma.fsh's exact sum-of-sines recipe (see that file for the full
-// per-line writeup) as a "warmth" field: warm (red-dominant) spots bulge the world outward like a
-// heat-mirage lens, cool (blue-dominant) spots pinch/dent it inward, using the field's own spatial
-// gradient as a fake surface normal (same "derivative as normal" trick fluted_glass_vision/
-// copper.fsh use, just on plasma's color instead of a height map). Real world always shows through
-// distorted, never replaced by the plasma pattern itself
+// reuses plasma.fsh's sum-of-sines recipe as a "warmth" field instead of rendering the pattern
+// directly: warm (red-dominant) spots bulge the world outward like a heat-mirage lens, cool
+// (blue-dominant) spots pinch/dent it inward, using the field's own spatial gradient as a fake
+// surface normal, same "derivative as normal" trick fluted_glass_vision/copper.fsh use
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;
@@ -19,7 +16,7 @@ layout(std140) uniform MirageConfig {
 in vec2 texCoord;
 out vec4 fragColor;
 
-// identical recipe to plasma.fsh's main() body - see that file for the full per-line writeup
+// identical recipe to plasma.fsh's main() body
 vec3 plasmaColor(vec2 uv, float t) {
 
     vec2 p = uv * 6.0;
@@ -39,8 +36,7 @@ vec3 plasmaColor(vec2 uv, float t) {
     ) * 0.5 + 0.5;
 }
 
-// red minus blue, roughly -1..1: positive = warm (bulge), negative = cool (pinch) - same idea as
-// thermal_vision's luma-driven heat ramp, just color-driven here
+// red minus blue, roughly -1..1: positive = warm (bulge), negative = cool (pinch)
 float warmthAt(vec2 uv, float t) {
     vec3 c = plasmaColor(uv, t);
     return c.r - c.b;
@@ -62,10 +58,9 @@ void main(){
     float wU = warmthAt(uv + vec2(0.0, eps), t);
     vec2 gradient = vec2(wR - wL, wU - wD) / (2.0 * eps);
 
-    // bulge outward from warm spots, pinch inward toward cool spots - same spherical-lens-
-    // compression spirit molten_glass.fsh/orb.fsh use for their blobs, just driven by the
-    // warmth field's gradient instead of distance-to-a-blob-center. Clamped so a steep gradient
-    // can't sample wildly off-position
+    // bulge outward from warm spots, pinch inward toward cool spots, same spherical-lens
+    // compression spirit molten_glass.fsh/orb.fsh use for their blobs; clamped so a steep
+    // gradient can't sample wildly off-position
     vec2 distortOffset = clamp(gradient * warmth * 0.0025, vec2(-0.03), vec2(0.03));
     vec2 distortedUV = texCoord + distortOffset;
 
