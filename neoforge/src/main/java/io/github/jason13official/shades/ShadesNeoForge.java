@@ -9,6 +9,8 @@ import io.github.jason13official.shades.impl.common.registry.ModParticles;
 import io.github.jason13official.shades.impl.common.registry.ModTabs;
 import io.github.jason13official.shades.impl.common.registry.ModTiles;
 import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
+import io.github.jason13official.shades.platform.CuriosCompat;
+import io.github.jason13official.shades.platform.Services;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.core.Registry;
@@ -23,6 +25,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -63,6 +66,12 @@ public class ShadesNeoForge {
     NeoForge.EVENT_BUS.addListener((Consumer<AddServerReloadListenersEvent>) event -> {
       event.addListener(Shades.identifier(Constants.MOD_ID), new ResourceReloadListener());
     });
+
+    // optional Curios accessory-slot support -> the listener itself, and every
+    // top.theillusivec4.curios.* reference inside it, only ever loads if Curios is installed
+    if (Services.PLATFORM.isModLoaded("curios")) {
+      EVENT_BUS.addListener((Consumer<RegisterCapabilitiesEvent>) CuriosCompat::registerCapability);
+    }
 
     if (FMLLoader.getCurrent().getDist() == Dist.CLIENT) {
       new ShadesClientNeoForge(EVENT_BUS);

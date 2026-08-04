@@ -4,6 +4,7 @@ import io.github.jason13official.shades.Shades;
 import io.github.jason13official.shades.ShadesClient;
 import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
+import io.github.jason13official.shades.platform.Services;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -31,13 +32,25 @@ public record CyclePrismC2SPacket(boolean reverse) implements CustomPacketPayloa
   public static void handle(CyclePrismC2SPacket packet, ServerPlayer player) {
 
     ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
-    if (headStack.getItem() != ModItems.PRISM_SHADES) {
+    if (headStack.getItem() == ModItems.PRISM_SHADES) {
+      int current = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
+      int next = Math.floorMod(current + (packet.reverse() ? -1 : 1), ShadesClient.prismCycleSize());
+      headStack.set(ModComponents.PRISM_CYCLE_INDEX, next);
       return;
     }
 
-    int current = headStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
-    int size = ShadesClient.prismCycleSize();
-    int next = Math.floorMod(current + (packet.reverse() ? -1 : 1), size);
-    headStack.set(ModComponents.PRISM_CYCLE_INDEX, next);
+    // not in the real head slot -> check an accessory slot (Trinkets/Curios, if installed);
+    // those libraries own their own slot storage, so the mutated stack has to be written back
+    // through setAccessoryShadesItem rather than mutated in place, unlike the real head slot
+    ItemStack accessoryStack = Services.PLATFORM.getAccessoryShadesItem(player);
+    if (accessoryStack.getItem() != ModItems.PRISM_SHADES) {
+      return;
+    }
+
+    int current = accessoryStack.getOrDefault(ModComponents.PRISM_CYCLE_INDEX, 0);
+    int next = Math.floorMod(current + (packet.reverse() ? -1 : 1), ShadesClient.prismCycleSize());
+    ItemStack updated = accessoryStack.copy();
+    updated.set(ModComponents.PRISM_CYCLE_INDEX, next);
+    Services.PLATFORM.setAccessoryShadesItem(player, updated);
   }
 }

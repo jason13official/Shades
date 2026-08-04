@@ -6,6 +6,10 @@ plugins {
 dependencies {
 
   implementation "curse.maven:shoulder-surfing-reloaded-243190:8445147"
+
+  // Curios (optional accessory-slot support; compile-only, not shipped/required -> drop a real
+  // Curios jar in runs/client/mods manually to test it locally, ModDevGradle picks it up as-is)
+  compileOnly "maven.modrinth:curios:15.0.0+26.1.2"
 }
 
 neoForge {

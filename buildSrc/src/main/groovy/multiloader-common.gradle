@@ -32,6 +32,11 @@ repositories {
     maven { url "https://cursemaven.com" }
     maven { url "https://api.modrinth.com/maven" }
 
+  maven {
+    name = "Ladysnake Libs"
+    url = 'https://maven.ladysnake.org/releases'
+  }
+
     exclusiveContent {
       forRepository { ivy {
         url 'https://github.com/Mods-For-Lupin/MonoLib/releases/download'

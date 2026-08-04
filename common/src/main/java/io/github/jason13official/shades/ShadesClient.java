@@ -16,6 +16,7 @@ import io.github.jason13official.shades.impl.client.ShadesRenderPipelines;
 import io.github.jason13official.shades.impl.common.registry.ModComponents;
 import io.github.jason13official.shades.impl.common.registry.ModItems;
 import io.github.jason13official.shades.impl.network.CyclePrismC2SPacket;
+import io.github.jason13official.shades.platform.Services;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -40,6 +41,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.MoonPhase;
@@ -199,6 +201,20 @@ public class ShadesClient {
     return postEffectsByItem;
   }
 
+  /// real head slot if it holds a shades item, else whatever accessory slot (Trinkets/Curios, if
+  /// installed) currently holds one -> shared by doGameRender, doHudOverlay, and
+  /// AvatarRendererMixin's render-state capture, so wearing shades as an accessory works
+  /// identically to the real head slot everywhere the mod cares which item is "worn"
+  public static ItemStack resolveWornShades(LivingEntity entity) {
+
+    ItemStack headStack = entity.getItemBySlot(EquipmentSlot.HEAD);
+    if (ModItems.idOf(headStack.getItem()) != null) {
+      return headStack;
+    }
+
+    return Services.PLATFORM.getAccessoryShadesItem(entity);
+  }
+
   public static void doGameRender(CrossFrameResourcePool resourcePool) {
 
     Minecraft mc = Minecraft.getInstance();
@@ -207,7 +223,7 @@ public class ShadesClient {
       return;
     }
 
-    ItemStack headStack = player.getItemBySlot(EquipmentSlot.HEAD);
+    ItemStack headStack = resolveWornShades(player);
     Item headItem = headStack.getItem();
 
     Identifier postEffectId;
@@ -878,7 +894,7 @@ public class ShadesClient {
       return;
     }
 
-    ItemStack headStack = mc.player.getItemBySlot(EquipmentSlot.HEAD);
+    ItemStack headStack = resolveWornShades(mc.player);
     if (headStack.getItem() != ModItems.PRISM_SHADES) {
       return;
     }

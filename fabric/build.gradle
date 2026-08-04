@@ -14,6 +14,13 @@ dependencies {
 
     implementation "curse.maven:forge-config-api-port-547434:8218664"
     implementation "curse.maven:shoulder-surfing-reloaded-243190:8445148"
+
+    // Trinkets (optional accessory-slot support; not required to run the mod, compile-only here
+    // and only pulled onto the classpath for local dev-run testing via modLocalRuntime)
+    // implementation "maven.modrinth:trinkets-updated:4.0.0-beta.3+26.1"
+    compileOnly "maven.modrinth:trinkets-updated:4.0.0-beta.3+26.1"
+    compileOnly "org.ladysnake.cardinal-components-api:cardinal-components-base:8.0.1"
+    compileOnly "org.ladysnake.cardinal-components-api:cardinal-components-entity:8.0.1"
 }
 
 loom {

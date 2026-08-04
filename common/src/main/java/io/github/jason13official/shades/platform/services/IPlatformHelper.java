@@ -1,7 +1,9 @@
 package io.github.jason13official.shades.platform.services;
 
 import java.nio.file.Path;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 
 public interface IPlatformHelper {
 
@@ -45,4 +47,18 @@ public interface IPlatformHelper {
   }
 
   CreativeModeTab.Builder tabBuilder();
+
+  /**
+   * The shades item currently worn in an accessory slot (Trinkets on Fabric, Curios on
+   * NeoForge), independent of the real vanilla head slot. Empty if the entity has none equipped,
+   * or if the relevant accessory mod isn't installed.
+   */
+  ItemStack getAccessoryShadesItem(LivingEntity entity);
+
+  /**
+   * Writes {@code stack} back into whichever accessory slot currently holds a shades item,
+   * through that mod's own slot API (so the change syncs correctly). No-op if the entity has no
+   * shades item equipped as an accessory, or if the relevant accessory mod isn't installed.
+   */
+  void setAccessoryShadesItem(LivingEntity entity, ItemStack stack);
 }
