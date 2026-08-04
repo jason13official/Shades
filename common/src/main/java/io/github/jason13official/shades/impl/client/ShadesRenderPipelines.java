@@ -64,7 +64,7 @@ public class ShadesRenderPipelines {
   /// inverse-projection*view matrix + camera/ping-origin positions, pushed fresh each frame by
   /// `ShadesClient` from real `GameRenderState` fields, used to reconstruct real world-space
   /// position per pixel. Deliberately not ambient `ProjMat`/`ModelViewMat` -> > those turned out to
-  /// be stale/wrong at this point in the frame (see Key Findings)
+  /// be stale/wrong at this point in the frame
   public static final RenderPipeline SONAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/sonar"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
@@ -219,5 +219,16 @@ public class ShadesRenderPipelines {
       .withFragmentShader(Shades.identifier("core/rain"))
       .withSampler("InSampler")
       .withUniform("RainConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// plasma.fsh's own sum-of-sines color field reused as a "warmth" map instead of a rendered
+  /// pattern - its spatial gradient bulges/pinches the real InSampler background (see mirage.fsh)
+  /// - "MirageConfig" uniform (real window aspect ratio) only
+  public static final RenderPipeline MIRAGE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/mirage"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/mirage"))
+      .withSampler("InSampler")
+      .withUniform("MirageConfig", UniformType.UNIFORM_BUFFER)
       .build();
 }

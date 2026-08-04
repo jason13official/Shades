@@ -86,6 +86,7 @@ public class ShadesClient {
   /// converted from a real post_effect (green tint + scanlines only, no live GameTime) once
   /// falling code glyphs needed live time - see core/matrix.fsh
   public static final Identifier MATRIX_SHADES_MARKER = Shades.identifier("matrix_shades");
+  public static final Identifier MIRAGE_SHADES_MARKER = Shades.identifier("mirage_shades");
 
   /// one entry per effect prism_shades can cycle through, in cycle order; item is `null` only for
   /// the index-0 "off" state. Replaces what used to be two separate parallel lists (an Identifier
@@ -135,6 +136,7 @@ public class ShadesClient {
           new Effect(ModItems.WAVEFORM_SHADES, WAVEFORM_SHADES_MARKER, "Waveform"),
           new Effect(ModItems.FLUID_SHADES, FLUID_SHADES_MARKER, "Fluid"),
           new Effect(ModItems.COPPER_SHADES, COPPER_SHADES_MARKER, "Copper"),
+          new Effect(ModItems.MIRAGE_SHADES, MIRAGE_SHADES_MARKER, "Mirage"),
           new Effect(ModItems.PLASMA_SHADES, PLASMA_SHADES_MARKER, "Plasma"));
     }
 
@@ -241,7 +243,8 @@ public class ShadesClient {
           Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, ShadesClient::getWorldDepthCapture, ShadesClient::buildWaveformRayUniform, ShadesClient::getWaveformFeedback)),
           Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, ShadesClient::getWorldDepthCapture, ShadesClient::buildFluidRayUniform, () -> null)),
           Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)),
-          Map.entry(MATRIX_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MATRIX, () -> null, ShadesClient::buildMatrixUniform, () -> null)));
+          Map.entry(MATRIX_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MATRIX, () -> null, ShadesClient::buildMatrixUniform, () -> null)),
+          Map.entry(MIRAGE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MIRAGE, () -> null, ShadesClient::buildMirageUniform, () -> null)));
     }
 
     return liveEffects;
@@ -570,7 +573,13 @@ public class ShadesClient {
     return buildAspectOnlyUniform(renderPass, "MatrixConfig", "shades:matrix_config");
   }
 
-  /// shared by the four aspect-ratio-only uniform blocks above - each is otherwise identical to
+  /// pushes the real window aspect ratio, so mirage.fsh's plasma-warmth field isn't stretched on
+  /// a non-square window
+  private static GpuBuffer buildMirageUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "MirageConfig", "shades:mirage_config");
+  }
+
+  /// shared by the five aspect-ratio-only uniform blocks above - each is otherwise identical to
   /// buildFireUniform, just under a different uniform/buffer name
   private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 

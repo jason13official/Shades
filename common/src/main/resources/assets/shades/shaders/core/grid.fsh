@@ -6,7 +6,7 @@
 // position, see buildGridRayUniform). Every real block on screen gets grid-snapped by its actual
 // world XZ column and bounces up and down in place, screen-space-displaced by its real distance
 // from the camera - this modifies how the real world looks instead of replacing it with an
-// unrelated scene, unlike this file's first version (see Key Findings)
+// unrelated scene, unlike this file's first version
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D InSampler;

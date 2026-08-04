@@ -7,8 +7,8 @@ uniform sampler2D InSampler;
 uniform sampler2D InDepthSampler;
 
 // combined inverse(ProjMat * ViewRotationMat) + camera position + ping origin, pushed fresh each
-// frame by ShadesClient (real GameRenderState fields, not ambient/stale bound uniforms -> see Key
-// Findings). Matches orbital_railgun's strike.fsh worldPos() technique
+// frame by ShadesClient (real GameRenderState fields, not ambient/stale bound uniforms.
+// Matches orbital_railgun's strike.fsh worldPos() technique
 layout(std140) uniform CameraRay {
     mat4 InverseTransformMatrix;
     vec3 CameraPosition;

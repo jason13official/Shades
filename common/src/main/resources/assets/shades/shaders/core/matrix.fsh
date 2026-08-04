@@ -2,10 +2,10 @@
 
 // converted from a plain post_effect (green luma tint + scanlines, no live time) to a live core
 // pipeline so it can add actual falling "Matrix code" glyphs on top - a post_effect JSON can never
-// get live GameTime (see Key Findings), so the falling-glyph part needed this move. The glyph
+// get live GameTime, so the falling-glyph part needed this move. The glyph
 // generator (rchar/matrixRain below) is a port of a shadertoy-style digital-rain sketch; the
 // original just replaced the whole screen with the glyph field, which would violate this mod's
-// own "modify how you see the world, don't replace it" rule (see Key Findings) - so here the
+// own "modify how you see the world, don't replace it" rule -> so here the
 // glyphs are ADDED on top of the same green-luma-tint+scanline recolor the old post_effect did,
 // real scene still fully legible underneath, tinted, with code raining over it
 #moj_import <minecraft:globals.glsl>
@@ -73,7 +73,7 @@ void main(){
     vec3 green = vec3(luma) * TINT;
 
     // fixed scanline frequency rather than real pixel rows - SamplerInfo (OutSize/InSize) isn't
-    // available in a live ShadesLiveVision pass, only real post_effect passes (see Key Findings)
+    // available in a live ShadesLiveVision pass, only real post_effect passes
     float scanline = fract(texCoord.y * 240.0);
     green *= (1.0 - step(scanline, 0.5) * SCANLINE_STRENGTH);
 
