@@ -139,15 +139,17 @@ public class ShadesRenderPipelines {
       .withUniform("FireConfig", UniformType.UNIFORM_BUFFER)
       .build();
 
-  /// tile-ripple raymarch surface, used to refract/tint the real InSampler background rather than
-  /// replace it (see grid.fsh) ->  "GridConfig" uniform (real window aspect ratio) only, no sway/
-  /// feedback needed
+  /// real depth-reconstructed world position (same worldPos() technique SONAR uses below) grid-
+  /// snapped into blocks that bounce in place - needs "InDepthSampler" (the persistent world depth
+  /// capture, shared with SONAR) plus a "GridRay" uniform (combined inverse-projection*view
+  /// matrix + camera position)
   public static final RenderPipeline GRID = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
       .withLocation(Shades.identifier("pipeline/grid"))
       .withVertexShader(SCREENQUAD_VERTEX_SHADER)
       .withFragmentShader(Shades.identifier("core/grid"))
       .withSampler("InSampler")
-      .withUniform("GridConfig", UniformType.UNIFORM_BUFFER)
+      .withSampler("InDepthSampler")
+      .withUniform("GridRay", UniformType.UNIFORM_BUFFER)
       .build();
 
   /// single roaming noise-churned lens, fisheye-refracting the real InSampler background within

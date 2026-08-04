@@ -211,7 +211,7 @@ public class ShadesClient {
 
   /// one entry per item needing live GameTime (see the *_SHADES_MARKER sentinels' doc comment) -> >
   /// `depth` is a Supplier since sonar_shades' depth capture is refreshed every frame
-  /// (getSonarDepthCapture()) rather than a fixed value; `extraUniforms` mirrors
+  /// (getWorldDepthCapture()) rather than a fixed value; `extraUniforms` mirrors
   /// ShadesLiveVision#process's own optional hook, `null` where an effect needs no custom uniform;
   /// `feedback` likewise mirrors its feedbackTarget hook, `() -> > null` where an effect has no
   /// trail/self-simulation needing its own previous frame back (see waveform_shades/fluid_shades)
@@ -225,7 +225,7 @@ public class ShadesClient {
     if (liveEffects == null) {
       liveEffects = Map.ofEntries(
           Map.entry(STATIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.STATIC_TV, () -> null, null, () -> null)),
-          Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getSonarDepthCapture, ShadesClient::buildSonarCameraRayUniform, () -> null)),
+          Map.entry(SONAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.SONAR, ShadesClient::getWorldDepthCapture, ShadesClient::buildSonarCameraRayUniform, () -> null)),
           Map.entry(GLITCH_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GLITCH, () -> null, null, () -> null)),
           Map.entry(RAIN_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RAIN, () -> null, null, () -> null)),
           Map.entry(CURSOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.CURSOR, () -> null, ShadesClient::buildCursorUniform, () -> null)),
@@ -233,7 +233,7 @@ public class ShadesClient {
           Map.entry(ANIMATED_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ANIMATED_GLASS, () -> null, null, () -> null)),
           Map.entry(MOLTEN_GLASS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MOLTEN_GLASS, () -> null, ShadesClient::buildGlassUniform, () -> null)),
           Map.entry(FIRE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FIRE, () -> null, ShadesClient::buildFireUniform, () -> null)),
-          Map.entry(GRID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRID, () -> null, ShadesClient::buildGridUniform, () -> null)),
+          Map.entry(GRID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRID, ShadesClient::getWorldDepthCapture, ShadesClient::buildGridRayUniform, () -> null)),
           Map.entry(ORB_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.ORB, () -> null, ShadesClient::buildOrbUniform, () -> null)),
           Map.entry(WAVEFORM_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WAVEFORM, () -> null, ShadesClient::buildWaveformUniform, ShadesClient::getWaveformFeedback)),
           Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, () -> null, ShadesClient::buildFluidUniform, ShadesClient::getFluidFeedback)),
@@ -244,10 +244,12 @@ public class ShadesClient {
   }
 
   /// persistent (not scratch-pool) copy of the real depth buffer, refreshed via
-  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -> 
+  /// GameRendererMixin#shades$captureWorldDepth right after the world/entities finish rendering -
   /// see that mixin's doc comment for why mainTarget's own depth can't be read directly by the
-  /// time doGameRender runs later in the same frame
-  private static RenderTarget sonarDepthCapture;
+  /// time doGameRender runs later in the same frame. Originally sonar_shades-only, now shared with
+  /// grid_shades too - captureWorldDepth() runs unconditionally every frame regardless of which
+  /// item is worn, so any effect needing real depth can just read this
+  private static RenderTarget worldDepthCapture;
 
   public static void captureWorldDepth() {
 
@@ -257,19 +259,19 @@ public class ShadesClient {
       return;
     }
 
-    if (sonarDepthCapture == null || sonarDepthCapture.width != mainTarget.width || sonarDepthCapture.height != mainTarget.height) {
-      if (sonarDepthCapture != null) {
-        sonarDepthCapture.destroyBuffers();
+    if (worldDepthCapture == null || worldDepthCapture.width != mainTarget.width || worldDepthCapture.height != mainTarget.height) {
+      if (worldDepthCapture != null) {
+        worldDepthCapture.destroyBuffers();
       }
-      sonarDepthCapture = new TextureTarget(null, mainTarget.width, mainTarget.height, true);
+      worldDepthCapture = new TextureTarget(null, mainTarget.width, mainTarget.height, true);
     }
 
     RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(
-        mainTarget.getDepthTexture(), sonarDepthCapture.getDepthTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);
+        mainTarget.getDepthTexture(), worldDepthCapture.getDepthTexture(), 0, 0, 0, 0, 0, mainTarget.width, mainTarget.height);
   }
 
-  private static GpuTextureView getSonarDepthCapture() {
-    return sonarDepthCapture != null ? sonarDepthCapture.getDepthTextureView() : null;
+  private static GpuTextureView getWorldDepthCapture() {
+    return worldDepthCapture != null ? worldDepthCapture.getDepthTextureView() : null;
   }
 
   /// persistent color-only feedback buffers for effects that need their own previous frame's
@@ -291,7 +293,7 @@ public class ShadesClient {
   }
 
   /// (re)allocates a persistent color-only target sized to the main target, cleared to opaque
-  /// black on (re)creation ->  unlike sonarDepthCapture, this one gets *read* before anything is
+  /// black on (re)creation ->  unlike worldDepthCapture, this one gets *read* before anything is
   /// ever copied into it (the very first frame an item wearing it is worn), so it can't rely on a
   /// same-frame write-before-read like captureWorldDepth does; it needs an explicit clear instead
   private static RenderTarget ensureFeedbackTarget(RenderTarget existing) {
@@ -487,10 +489,26 @@ public class ShadesClient {
     }
   }
 
-  /// pushes the real window aspect ratio, so grid.fsh's fixed camera frames a square-looking
-  /// tile grid regardless of window shape
-  private static GpuBuffer buildGridUniform(RenderPass renderPass) {
-    return buildAspectOnlyUniform(renderPass, "GridConfig", "shades:grid_config");
+  /// pushes a combined inverse-projection*view matrix + camera position, so grid.fsh can
+  /// reconstruct real world-space position per pixel and grid-snap by real block columns - same
+  /// worldPos() technique buildSonarCameraRayUniform uses, just without a ping origin (every
+  /// column bounces on its own hashed phase instead of sweeping from a fixed point)
+  private static GpuBuffer buildGridRayUniform(RenderPass renderPass) {
+
+    CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
+
+    Matrix4f inverseTransform = new Matrix4f(cameraState.projectionMatrix).mul(cameraState.viewRotationMatrix).invert();
+    Vec3 cameraPos = cameraState.pos;
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 80)
+          .putMat4f(inverseTransform)
+          .putVec3((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:grid_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("GridRay", buffer);
+      return buffer;
+    }
   }
 
   /// pushes the real window aspect ratio, so orb.fsh's near-plane projection isn't stretched on a
