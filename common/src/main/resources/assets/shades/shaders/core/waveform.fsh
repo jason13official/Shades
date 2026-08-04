@@ -51,10 +51,10 @@ void main(){
 
     // the "scan altitude" slowly oscillates around eye level, so the contour sweeps up and down
     // through real terrain/buildings over time instead of sitting at one fixed height
-    float target = CameraPosition.y + sin(t * 0.3) * 4.0;
+    float target = CameraPosition.y + sin(t * 0.12) * 4.0;
     float diff = surfacePos.y - target;
 
-    float core = 1.0 - smoothstep(0.0, 0.12, abs(diff));
+    float core = 1.0 - smoothstep(0.0, 0.3, abs(diff));
     float glow = exp(-abs(diff) * 8.0) * 0.3;
 
     vec3 traceColor = hsv2rgb(vec3(fract(t / 6.0 + surfacePos.x * 0.01 + surfacePos.z * 0.01), 0.75, 1.0));
@@ -65,8 +65,11 @@ void main(){
     vec3 prev = texture(PrevFrameSampler, texCoord).rgb;
     vec3 accumulated = clamp(trace + prev * 0.85, 0.0, 1.0);
 
-    // real background stays at full brightness everywhere - the trace only ever brightens on top
-    // of it, never dims it
-    vec3 outColor = max(scene, accumulated);
+    // real background stays at full brightness everywhere, and the trace is always translucent
+    // (capped alpha, never a hard opaque overwrite) rather than a flat max() - close-up geometry
+    // (e.g. the contour crossing right at your feet) would otherwise read as a harsh saturated
+    // edge since near objects cover far more screen pixels at full core intensity
+    float alpha = clamp(max(max(accumulated.r, accumulated.g), accumulated.b) * 0.7, 0.0, 0.65);
+    vec3 outColor = mix(scene, accumulated, alpha);
     fragColor = vec4(outColor, 1.0);
 }
