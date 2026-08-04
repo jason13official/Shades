@@ -267,4 +267,55 @@ public class ShadesRenderPipelines {
       .withSampler("InDepthSampler")
       .withUniform("VoxelRay", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// double-thump vignette + center zoom-pulse driven by real player health; needs a
+  /// "PulseConfig" uniform (aspect ratio, health fraction, accumulated beat phase)
+  public static final RenderPipeline PULSE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/pulse"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/pulse"))
+      .withSampler("InSampler")
+      .withUniform("PulseConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// tinted-lens look: a gentle screen-space grade toward the real biome-blended grass/foliage
+  /// color everywhere, strengthening into a vignette toward the screen edges; needs a
+  /// "BiomeConfig" uniform (aspect ratio + ground tint)
+  public static final RenderPipeline BIOME = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/biome"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/biome"))
+      .withSampler("InSampler")
+      .withUniform("BiomeConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// rotating radar-ring sweep + a blip toward the nearest real entity; needs a "RadarConfig"
+  /// uniform (aspect ratio, distance/bearing/found-flag of the nearest tracked entity)
+  public static final RenderPipeline RADAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/radar"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/radar"))
+      .withSampler("InSampler")
+      .withUniform("RadarConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// downward view-stretch while falling plus an expanding shockwave ring on landing; needs a
+  /// "GravityConfig" uniform (aspect ratio, smoothed fall-speed factor, seconds since landing)
+  public static final RenderPipeline GRAVITY = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/gravity"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/gravity"))
+      .withSampler("InSampler")
+      .withUniform("GravityConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// silvery night vignette scaled by real sky darkness and real moon phase, plus twinkling
+  /// stars at night; needs a "LunarConfig" uniform (aspect ratio, moon phase fraction, night factor)
+  public static final RenderPipeline LUNAR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/lunar"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/lunar"))
+      .withSampler("InSampler")
+      .withUniform("LunarConfig", UniformType.UNIFORM_BUFFER)
+      .build();
 }

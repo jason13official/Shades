@@ -26,16 +26,23 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.MoonPhase;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
@@ -93,6 +100,11 @@ public class ShadesClient {
   public static final Identifier AURORA_SHADES_MARKER = Shades.identifier("aurora_shades");
   public static final Identifier COSMIC_SHADES_MARKER = Shades.identifier("cosmic_shades");
   public static final Identifier VOXEL_SHADES_MARKER = Shades.identifier("voxel_shades");
+  public static final Identifier PULSE_SHADES_MARKER = Shades.identifier("pulse_shades");
+  public static final Identifier BIOME_SHADES_MARKER = Shades.identifier("biome_shades");
+  public static final Identifier RADAR_SHADES_MARKER = Shades.identifier("radar_shades");
+  public static final Identifier GRAVITY_SHADES_MARKER = Shades.identifier("gravity_shades");
+  public static final Identifier LUNAR_SHADES_MARKER = Shades.identifier("lunar_shades");
 
   /// one entry per prism_shades cycle position, in order; `item` is `null` only for the index-0
   /// "off" state. A single list instead of two parallel ones, so the id/displayName pairing can't
@@ -148,6 +160,11 @@ public class ShadesClient {
           new Effect(ModItems.AURORA_SHADES, AURORA_SHADES_MARKER, "Aurora"),
           new Effect(ModItems.COSMIC_SHADES, COSMIC_SHADES_MARKER, "Cosmic"),
           new Effect(ModItems.VOXEL_SHADES, VOXEL_SHADES_MARKER, "Voxel"),
+          new Effect(ModItems.PULSE_SHADES, PULSE_SHADES_MARKER, "Pulse"),
+          new Effect(ModItems.BIOME_SHADES, BIOME_SHADES_MARKER, "Biome"),
+          new Effect(ModItems.RADAR_SHADES, RADAR_SHADES_MARKER, "Radar"),
+          new Effect(ModItems.GRAVITY_SHADES, GRAVITY_SHADES_MARKER, "Gravity"),
+          new Effect(ModItems.LUNAR_SHADES, LUNAR_SHADES_MARKER, "Lunar"),
           new Effect(ModItems.PLASMA_SHADES, PLASMA_SHADES_MARKER, "Plasma"));
     }
 
@@ -257,7 +274,12 @@ public class ShadesClient {
           Map.entry(WISP_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WISP, () -> null, ShadesClient::buildWispUniform, () -> null)),
           Map.entry(AURORA_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.AURORA, () -> null, null, () -> null)),
           Map.entry(COSMIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COSMIC, () -> null, ShadesClient::buildCosmicUniform, () -> null)),
-          Map.entry(VOXEL_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VOXEL, ShadesClient::getWorldDepthCapture, ShadesClient::buildVoxelRayUniform, () -> null)));
+          Map.entry(VOXEL_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VOXEL, ShadesClient::getWorldDepthCapture, ShadesClient::buildVoxelRayUniform, () -> null)),
+          Map.entry(PULSE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.PULSE, () -> null, ShadesClient::buildPulseUniform, () -> null)),
+          Map.entry(BIOME_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.BIOME, () -> null, ShadesClient::buildBiomeUniform, () -> null)),
+          Map.entry(RADAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RADAR, () -> null, ShadesClient::buildRadarUniform, () -> null)),
+          Map.entry(GRAVITY_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRAVITY, () -> null, ShadesClient::buildGravityUniform, () -> null)),
+          Map.entry(LUNAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.LUNAR, () -> null, ShadesClient::buildLunarUniform, () -> null)));
     }
 
     return liveEffects;
@@ -616,6 +638,199 @@ public class ShadesClient {
 
       GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:voxel_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
       renderPass.setUniform("VoxelRay", buffer);
+      return buffer;
+    }
+  }
+
+  /// accumulated heartbeat phase for pulse.fsh; advanced every frame by a rate that climbs as
+  /// real player health drops, using wall-clock delta rather than GameTime so the beat keeps a
+  /// consistent real-world tempo regardless of game speed
+  private static float pulsePhase = 0.0f;
+  private static long pulseLastNanos = -1L;
+
+  /// pushes the real window aspect ratio, current health fraction, and the accumulated beat
+  /// phase, so pulse.fsh's double-thump vignette tracks the player's real health and beats
+  /// faster the lower it gets
+  private static GpuBuffer buildPulseUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+    float healthFactor = player != null ? Mth.clamp(player.getHealth() / player.getMaxHealth(), 0.0f, 1.0f) : 1.0f;
+
+    long now = System.nanoTime();
+    float dt = pulseLastNanos < 0 ? 0.0f : (now - pulseLastNanos) / 1_000_000_000.0f;
+    pulseLastNanos = now;
+
+    float beatsPerSecond = Mth.lerp(1.0f - healthFactor, 1.1f, 3.2f);
+    pulsePhase += dt * beatsPerSecond * (2.0f * (float) Math.PI);
+
+    Window window = mc.getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect)
+          .putFloat(healthFactor)
+          .putFloat(pulsePhase);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:pulse_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("PulseConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// pushes the real window aspect ratio plus the real biome-blended grass/foliage tint at the
+  /// player's position (the same smoothed per-biome color vanilla grass/leaves render with, via
+  /// BiomeColors -> a real biome identity signal, unlike fog/sky color which is mostly
+  /// weather/dimension-driven), so biome.fsh can tint the whole view like a colored lens
+  private static GpuBuffer buildBiomeUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+
+    int groundTint = 0;
+    if (player != null && player.level() instanceof ClientLevel level) {
+      BlockPos pos = BlockPos.containing(player.position());
+      int grassColor = BiomeColors.getAverageGrassColor(level, pos);
+      int foliageColor = BiomeColors.getAverageFoliageColor(level, pos);
+      groundTint = ARGB.average(grassColor, foliageColor);
+    }
+
+    Window window = mc.getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 32)
+          .putFloat(aspect)
+          .putVec3(((groundTint >> 16) & 0xFF) / 255.0f, ((groundTint >> 8) & 0xFF) / 255.0f, (groundTint & 0xFF) / 255.0f);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:biome_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("BiomeConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// how far radar_shades looks for a target; entities further than this never light up the blip
+  private static final double RADAR_RANGE = 48.0;
+
+  /// pushes the real window aspect ratio plus the distance/bearing of the nearest real entity
+  /// (excluding the player), found by scanning ClientLevel's actual render entity list, so
+  /// radar.fsh's blip always points at something genuinely in the world
+  private static GpuBuffer buildRadarUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+
+    double bestDistance = Double.MAX_VALUE;
+    double bestAngle = 0.0;
+    boolean found = false;
+
+    if (player != null && player.level() instanceof ClientLevel level) {
+      for (Entity entity : level.entitiesForRendering()) {
+        if (entity == player) {
+          continue;
+        }
+
+        double distance = entity.position().distanceTo(player.position());
+        if (distance < bestDistance && distance <= RADAR_RANGE) {
+          bestDistance = distance;
+          double dx = entity.getX() - player.getX();
+          double dz = entity.getZ() - player.getZ();
+          double bearing = Math.atan2(dx, dz) + Math.toRadians(player.getYRot());
+          bestAngle = Mth.wrapDegrees(Math.toDegrees(bearing)) * Mth.DEG_TO_RAD + Math.PI / 2.0;
+          found = true;
+        }
+      }
+    }
+
+    Window window = mc.getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect)
+          .putFloat(found ? (float) bestDistance : 999.0f)
+          .putFloat((float) bestAngle)
+          .putFloat(found ? 1.0f : 0.0f);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:radar_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("RadarConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// smoothed downward-speed factor and the wall-clock timestamp of the last real landing,
+  /// tracked across frames so gravity.fsh's shockwave ring can expand from a genuine landing
+  /// event instead of a looping animation
+  private static float smoothedFall = 0.0f;
+  private static boolean previouslyOnGround = true;
+  private static long lastLandingNanos = Long.MIN_VALUE;
+
+  /// pushes the real window aspect ratio, smoothed fall-speed factor, and seconds since the last
+  /// real landing, so gravity.fsh can stretch the view while falling and ring out on impact
+  private static GpuBuffer buildGravityUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+
+    float rawFall = 0.0f;
+    if (player != null) {
+      rawFall = (float) Math.max(-player.getDeltaMovement().y, 0.0);
+
+      boolean onGround = player.onGround();
+      if (onGround && !previouslyOnGround && smoothedFall > 0.3f) {
+        lastLandingNanos = System.nanoTime();
+      }
+      previouslyOnGround = onGround;
+    }
+
+    smoothedFall += (rawFall - smoothedFall) * 0.3f;
+    float fallFactor = Mth.clamp(smoothedFall / 1.2f, 0.0f, 1.0f);
+
+    float shockAge = lastLandingNanos == Long.MIN_VALUE ? 999.0f : (System.nanoTime() - lastLandingNanos) / 1_000_000_000.0f;
+
+    Window window = mc.getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect)
+          .putFloat(fallFactor)
+          .putFloat(shockAge);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:gravity_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("GravityConfig", buffer);
+      return buffer;
+    }
+  }
+
+  /// pushes the real window aspect ratio, the real current moon phase (via
+  /// MoonPhase.index()/7, 0 full .. 1 new), and real sky darkness (via Level.getSkyDarken()/15,
+  /// 0 day .. 1 night), so lunar.fsh's vignette/starfield track the world's actual night state
+  private static GpuBuffer buildLunarUniform(RenderPass renderPass) {
+
+    Minecraft mc = Minecraft.getInstance();
+    LocalPlayer player = mc.player;
+
+    float phaseFraction = 0.0f;
+    float nightFactor = 0.0f;
+    if (player != null && player.level() instanceof ClientLevel level) {
+      MoonPhase phase = level.environmentAttributes().getDimensionValue(EnvironmentAttributes.MOON_PHASE);
+      phaseFraction = phase.index() / 7.0f;
+      nightFactor = level.getSkyDarken() / 15.0f;
+    }
+
+    Window window = mc.getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 16)
+          .putFloat(aspect)
+          .putFloat(phaseFraction)
+          .putFloat(nightFactor);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:lunar_config", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("LunarConfig", buffer);
       return buffer;
     }
   }

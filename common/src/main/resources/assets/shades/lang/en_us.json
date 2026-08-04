@@ -41,6 +41,11 @@
   "item.shades.aurora_shades": "Aurora Shades",
   "item.shades.cosmic_shades": "Cosmic Shades",
   "item.shades.voxel_shades": "Voxel Shades",
+  "item.shades.pulse_shades": "Pulse Shades",
+  "item.shades.biome_shades": "Biome Shades",
+  "item.shades.radar_shades": "Radar Shades",
+  "item.shades.gravity_shades": "Gravity Shades",
+  "item.shades.lunar_shades": "Lunar Shades",
   "item.shades.plasma_shades": "Plasma Shades",
   "key.shades.cycle_prism": "Cycle Prism Shades Effect",
   "key.categories.shades": "Shades"
