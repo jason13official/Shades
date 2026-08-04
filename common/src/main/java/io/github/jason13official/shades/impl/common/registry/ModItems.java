@@ -54,6 +54,12 @@ public class ModItems {
   public static Item FLUID_SHADES;
   public static Item COPPER_SHADES;
   public static Item MIRAGE_SHADES;
+  public static Item LENS_SHADES;
+  public static Item VORTEX_SHADES;
+  public static Item WISP_SHADES;
+  public static Item AURORA_SHADES;
+  public static Item COSMIC_SHADES;
+  public static Item VOXEL_SHADES;
   public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
@@ -93,6 +99,12 @@ public class ModItems {
     FLUID_SHADES = registerShades("fluid_shades", consumer);
     COPPER_SHADES = registerShades("copper_shades", consumer);
     MIRAGE_SHADES = registerShades("mirage_shades", consumer);
+    LENS_SHADES = registerShades("lens_shades", consumer);
+    VORTEX_SHADES = registerShades("vortex_shades", consumer);
+    WISP_SHADES = registerShades("wisp_shades", consumer);
+    AURORA_SHADES = registerShades("aurora_shades", consumer);
+    COSMIC_SHADES = registerShades("cosmic_shades", consumer);
+    VOXEL_SHADES = registerShades("voxel_shades", consumer);
     PLASMA_SHADES = registerShades("plasma_shades", consumer);
   }
 

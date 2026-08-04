@@ -206,4 +206,65 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .withUniform("MirageConfig", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// chromatic-refraction glass-blob metaball field; needs a "LensConfig" uniform (real window
+  /// aspect ratio) only
+  public static final RenderPipeline LENS = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/lens"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/lens"))
+      .withSampler("InSampler")
+      .withUniform("LensConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// radial tentacle vignette multiplied over a noise-warped, desaturated real world; no custom
+  /// uniform needed
+  public static final RenderPipeline VORTEX = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/vortex"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/vortex"))
+      .withSampler("InSampler")
+      .build();
+
+  /// 9 moving points of glow, additive over the real background; needs a "WispConfig" uniform
+  /// (real window aspect ratio) only
+  public static final RenderPipeline WISP = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/wisp"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/wisp"))
+      .withSampler("InSampler")
+      .withUniform("WispConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// folded-fbm color gradient reused as a tint/refraction-normal source over the real world; no
+  /// custom uniform needed
+  public static final RenderPipeline AURORA = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/aurora"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/aurora"))
+      .withSampler("InSampler")
+      .build();
+
+  /// swirling glowing strand layers, additive over the real background; needs a "CosmicConfig"
+  /// uniform (real window aspect ratio) only
+  public static final RenderPipeline COSMIC = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/cosmic"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/cosmic"))
+      .withSampler("InSampler")
+      .withUniform("CosmicConfig", UniformType.UNIFORM_BUFFER)
+      .build();
+
+  /// a flat polar-grid voxel disc, colored by a per-cell interference pattern and gated by real
+  /// depth (sky excluded, size/pattern shaped by real per-pixel distance). Needs "InDepthSampler"
+  /// (shared worldDepthCapture) plus a "VoxelRay" uniform (inverse-projection*view matrix +
+  /// aspect ratio + camera position)
+  public static final RenderPipeline VOXEL = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/voxel"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/voxel"))
+      .withSampler("InSampler")
+      .withSampler("InDepthSampler")
+      .withUniform("VoxelRay", UniformType.UNIFORM_BUFFER)
+      .build();
 }

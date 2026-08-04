@@ -87,6 +87,12 @@ public class ShadesClient {
   /// falling code glyphs needed live time to animate
   public static final Identifier MATRIX_SHADES_MARKER = Shades.identifier("matrix_shades");
   public static final Identifier MIRAGE_SHADES_MARKER = Shades.identifier("mirage_shades");
+  public static final Identifier LENS_SHADES_MARKER = Shades.identifier("lens_shades");
+  public static final Identifier VORTEX_SHADES_MARKER = Shades.identifier("vortex_shades");
+  public static final Identifier WISP_SHADES_MARKER = Shades.identifier("wisp_shades");
+  public static final Identifier AURORA_SHADES_MARKER = Shades.identifier("aurora_shades");
+  public static final Identifier COSMIC_SHADES_MARKER = Shades.identifier("cosmic_shades");
+  public static final Identifier VOXEL_SHADES_MARKER = Shades.identifier("voxel_shades");
 
   /// one entry per prism_shades cycle position, in order; `item` is `null` only for the index-0
   /// "off" state. A single list instead of two parallel ones, so the id/displayName pairing can't
@@ -136,6 +142,12 @@ public class ShadesClient {
           new Effect(ModItems.FLUID_SHADES, FLUID_SHADES_MARKER, "Fluid"),
           new Effect(ModItems.COPPER_SHADES, COPPER_SHADES_MARKER, "Copper"),
           new Effect(ModItems.MIRAGE_SHADES, MIRAGE_SHADES_MARKER, "Mirage"),
+          new Effect(ModItems.LENS_SHADES, LENS_SHADES_MARKER, "Lens"),
+          new Effect(ModItems.VORTEX_SHADES, VORTEX_SHADES_MARKER, "Vortex"),
+          new Effect(ModItems.WISP_SHADES, WISP_SHADES_MARKER, "Wisp"),
+          new Effect(ModItems.AURORA_SHADES, AURORA_SHADES_MARKER, "Aurora"),
+          new Effect(ModItems.COSMIC_SHADES, COSMIC_SHADES_MARKER, "Cosmic"),
+          new Effect(ModItems.VOXEL_SHADES, VOXEL_SHADES_MARKER, "Voxel"),
           new Effect(ModItems.PLASMA_SHADES, PLASMA_SHADES_MARKER, "Plasma"));
     }
 
@@ -239,7 +251,13 @@ public class ShadesClient {
           Map.entry(FLUID_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.FLUID, ShadesClient::getWorldDepthCapture, ShadesClient::buildFluidRayUniform, () -> null)),
           Map.entry(COPPER_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COPPER, () -> null, ShadesClient::buildCopperUniform, () -> null)),
           Map.entry(MATRIX_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MATRIX, () -> null, ShadesClient::buildMatrixUniform, () -> null)),
-          Map.entry(MIRAGE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MIRAGE, () -> null, ShadesClient::buildMirageUniform, () -> null)));
+          Map.entry(MIRAGE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.MIRAGE, () -> null, ShadesClient::buildMirageUniform, () -> null)),
+          Map.entry(LENS_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.LENS, () -> null, ShadesClient::buildLensUniform, () -> null)),
+          Map.entry(VORTEX_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VORTEX, () -> null, null, () -> null)),
+          Map.entry(WISP_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WISP, () -> null, ShadesClient::buildWispUniform, () -> null)),
+          Map.entry(AURORA_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.AURORA, () -> null, null, () -> null)),
+          Map.entry(COSMIC_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.COSMIC, () -> null, ShadesClient::buildCosmicUniform, () -> null)),
+          Map.entry(VOXEL_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.VOXEL, ShadesClient::getWorldDepthCapture, ShadesClient::buildVoxelRayUniform, () -> null)));
     }
 
     return liveEffects;
@@ -247,7 +265,7 @@ public class ShadesClient {
 
   /// persistent copy of the real depth buffer, refreshed by GameRendererMixin's
   /// shades$captureWorldDepth right before the item-in-hand render clears the real one. Runs every
-  /// frame regardless of worn item, so sonar/grid/waveform/fluid_shades all just read this
+  /// frame regardless of worn item, so sonar/grid/waveform/fluid/voxel_shades all just read this
   private static RenderTarget worldDepthCapture;
 
   public static void captureWorldDepth() {
@@ -559,7 +577,50 @@ public class ShadesClient {
     return buildAspectOnlyUniform(renderPass, "MirageConfig", "shades:mirage_config");
   }
 
-  /// shared by the five aspect-ratio-only uniform blocks above; each just needs a different
+  /// pushes the real window aspect ratio, so lens.fsh's blob field isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildLensUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "LensConfig", "shades:lens_config");
+  }
+
+  /// pushes the real window aspect ratio, so wisp.fsh's point positions aren't stretched on a
+  /// non-square window
+  private static GpuBuffer buildWispUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "WispConfig", "shades:wisp_config");
+  }
+
+  /// pushes the real window aspect ratio, so cosmic.fsh's strand field isn't stretched on a
+  /// non-square window
+  private static GpuBuffer buildCosmicUniform(RenderPass renderPass) {
+    return buildAspectOnlyUniform(renderPass, "CosmicConfig", "shades:cosmic_config");
+  }
+
+  /// pushes the inverse-projection*view matrix + camera position (so voxel.fsh can reconstruct
+  /// real world position and distance, same worldPos() technique grid.fsh/fluid.fsh use) plus the
+  /// real window aspect ratio for its camera ray direction. Aspect is placed before the vec3 in
+  /// the push order to match std140's scalar-before-vector packing
+  private static GpuBuffer buildVoxelRayUniform(RenderPass renderPass) {
+
+    CameraRenderState cameraState = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
+
+    Matrix4f inverseTransform = new Matrix4f(cameraState.projectionMatrix).mul(cameraState.viewRotationMatrix).invert();
+    Vec3 cameraPos = cameraState.pos;
+    Window window = Minecraft.getInstance().getWindow();
+    float aspect = (float) window.getWidth() / (float) window.getHeight();
+
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      Std140Builder builder = Std140Builder.onStack(stack, 96)
+          .putMat4f(inverseTransform)
+          .putFloat(aspect)
+          .putVec3((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
+
+      GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "shades:voxel_ray", GpuBuffer.USAGE_UNIFORM, builder.get());
+      renderPass.setUniform("VoxelRay", buffer);
+      return buffer;
+    }
+  }
+
+  /// shared by the eight aspect-ratio-only uniform blocks above; each just needs a different
   /// uniform/buffer name
   private static GpuBuffer buildAspectOnlyUniform(RenderPass renderPass, String uniformName, String bufferLabel) {
 

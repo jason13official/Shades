@@ -39,6 +39,12 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.COPPER);
       event.registerPipeline(ShadesRenderPipelines.MATRIX);
       event.registerPipeline(ShadesRenderPipelines.MIRAGE);
+      event.registerPipeline(ShadesRenderPipelines.LENS);
+      event.registerPipeline(ShadesRenderPipelines.VORTEX);
+      event.registerPipeline(ShadesRenderPipelines.WISP);
+      event.registerPipeline(ShadesRenderPipelines.AURORA);
+      event.registerPipeline(ShadesRenderPipelines.COSMIC);
+      event.registerPipeline(ShadesRenderPipelines.VOXEL);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {

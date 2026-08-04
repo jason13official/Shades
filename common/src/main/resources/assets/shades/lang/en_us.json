@@ -35,6 +35,12 @@
   "item.shades.fluid_shades": "Fluid Shades",
   "item.shades.copper_shades": "Copper Shades",
   "item.shades.mirage_shades": "Mirage Shades",
+  "item.shades.lens_shades": "Lens Shades",
+  "item.shades.vortex_shades": "Vortex Shades",
+  "item.shades.wisp_shades": "Wisp Shades",
+  "item.shades.aurora_shades": "Aurora Shades",
+  "item.shades.cosmic_shades": "Cosmic Shades",
+  "item.shades.voxel_shades": "Voxel Shades",
   "item.shades.plasma_shades": "Plasma Shades",
   "key.shades.cycle_prism": "Cycle Prism Shades Effect",
   "key.categories.shades": "Shades"
