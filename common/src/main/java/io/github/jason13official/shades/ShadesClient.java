@@ -57,8 +57,8 @@ public class ShadesClient {
   public static final Identifier INVERT_SHADES_POST_EFFECT = Shades.identifier("invert_shades");
   public static final Identifier SPIDER_SHADES_POST_EFFECT = Shades.identifier("spider_shades");
 
-  /// ported from 1.20.1's vanilla debug shader list (Notch/FXAA/.../Antialias); see
-  /// _archive/SUMMARY.md. Notch through Antialias are plain post_effect items; Phosphor and Wobble
+  /// ported from 1.20.1's vanilla debug shader list (Notch/FXAA/.../Antialias);
+  /// Notch through Antialias are plain post_effect items; Phosphor and Wobble
   /// need live GameTime/PrevFrameSampler and are declared as *_MARKER sentinels further below
   public static final Identifier NOTCH_SHADES_POST_EFFECT = Shades.identifier("notch_shades");
   public static final Identifier FXAA_SHADES_POST_EFFECT = Shades.identifier("fxaa_shades");
@@ -78,6 +78,11 @@ public class ShadesClient {
   public static final Identifier GREEN_SHADES_POST_EFFECT = Shades.identifier("green_shades");
   public static final Identifier BLOBS_SHADES_POST_EFFECT = Shades.identifier("blobs_shades");
   public static final Identifier ANTIALIAS_SHADES_POST_EFFECT = Shades.identifier("antialias_shades");
+
+  /// ported from 15w14a's April Fools "Love and Hugs Update";
+  /// the same color_convolve reuse trick as color_convolve_shades/
+  /// desaturate_shades above, just with the original's rose-tinted matrix instead
+  public static final Identifier LOVE_SHADES_POST_EFFECT = Shades.identifier("love_shades");
 
   public static final Identifier BLUR_SHADES_POST_EFFECT = Shades.identifier("blur_shades");
   public static final Identifier NIGHT_VISION_SHADES_POST_EFFECT = Shades.identifier("night_vision_shades");
@@ -171,6 +176,7 @@ public class ShadesClient {
           new Effect(ModItems.WOBBLE_SHADES, WOBBLE_SHADES_MARKER, "Wobble"),
           new Effect(ModItems.BLOBS_SHADES, BLOBS_SHADES_POST_EFFECT, "Blobs"),
           new Effect(ModItems.ANTIALIAS_SHADES, ANTIALIAS_SHADES_POST_EFFECT, "Antialias"),
+          new Effect(ModItems.LOVE_SHADES, LOVE_SHADES_POST_EFFECT, "Love"),
           new Effect(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT, "Blurry"),
           new Effect(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT, "Night Vision"),
           new Effect(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT, "Thermal"),

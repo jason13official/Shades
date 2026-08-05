@@ -43,6 +43,7 @@ public class ModItems {
   public static Item WOBBLE_SHADES;
   public static Item BLOBS_SHADES;
   public static Item ANTIALIAS_SHADES;
+  public static Item LOVE_SHADES;
   public static Item BLUR_SHADES;
   public static Item NIGHT_VISION_SHADES;
   public static Item THERMAL_SHADES;
@@ -113,6 +114,7 @@ public class ModItems {
     WOBBLE_SHADES = registerShades("wobble_shades", consumer);
     BLOBS_SHADES = registerShades("blobs_shades", consumer);
     ANTIALIAS_SHADES = registerShades("antialias_shades", consumer);
+    LOVE_SHADES = registerShades("love_shades", consumer);
     BLUR_SHADES = registerShades("blur_shades", consumer);
     NIGHT_VISION_SHADES = registerShades("night_vision_shades", consumer);
     THERMAL_SHADES = registerShades("thermal_shades", consumer);
