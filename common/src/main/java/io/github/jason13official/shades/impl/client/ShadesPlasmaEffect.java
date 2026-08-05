@@ -31,7 +31,11 @@ public class ShadesPlasmaEffect {
     }
 
     Camera camera = mc.gameRenderer.getMainCamera();
-    Camera.NearPlane nearPlane = camera.getNearPlane(mc.options.fov().get());
+    // camera.getFov() is the *effective* fov already baked in fly/sprint zoom-out, unlike the
+    // raw options.fov() setting; using the setting here left the quad too small (angularly
+    // narrower than the actual view frustum) whenever flying widened the real fov, exposing
+    // unshaded screen edges
+    Camera.NearPlane nearPlane = camera.getNearPlane(camera.getFov());
 
     // these are camera-relative offsets already (not world positions); the same space level-render
     // geometry is submitted in, no further translation needed
