@@ -50,6 +50,8 @@ public class ShadesClientNeoForge {
       event.registerPipeline(ShadesRenderPipelines.RADAR);
       event.registerPipeline(ShadesRenderPipelines.GRAVITY);
       event.registerPipeline(ShadesRenderPipelines.LUNAR);
+      event.registerPipeline(ShadesRenderPipelines.WOBBLE);
+      event.registerPipeline(ShadesRenderPipelines.PHOSPHOR);
     });
 
     NeoForge.EVENT_BUS.addListener((Consumer<SubmitCustomGeometryEvent>) event -> {

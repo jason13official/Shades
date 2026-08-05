@@ -56,6 +56,29 @@ public class ShadesClient {
   public static final Identifier CREEPER_SHADES_POST_EFFECT = Shades.identifier("creeper_shades");
   public static final Identifier INVERT_SHADES_POST_EFFECT = Shades.identifier("invert_shades");
   public static final Identifier SPIDER_SHADES_POST_EFFECT = Shades.identifier("spider_shades");
+
+  /// ported from 1.20.1's vanilla debug shader list (Notch/FXAA/.../Antialias); see
+  /// _archive/SUMMARY.md. Notch through Antialias are plain post_effect items; Phosphor and Wobble
+  /// need live GameTime/PrevFrameSampler and are declared as *_MARKER sentinels further below
+  public static final Identifier NOTCH_SHADES_POST_EFFECT = Shades.identifier("notch_shades");
+  public static final Identifier FXAA_SHADES_POST_EFFECT = Shades.identifier("fxaa_shades");
+  public static final Identifier ART_SHADES_POST_EFFECT = Shades.identifier("art_shades");
+  public static final Identifier BUMPY_SHADES_POST_EFFECT = Shades.identifier("bumpy_shades");
+  public static final Identifier BLOBS2_SHADES_POST_EFFECT = Shades.identifier("blobs2_shades");
+  public static final Identifier PENCIL_SHADES_POST_EFFECT = Shades.identifier("pencil_shades");
+  public static final Identifier COLOR_CONVOLVE_SHADES_POST_EFFECT = Shades.identifier("color_convolve_shades");
+  public static final Identifier DECONVERGE_SHADES_POST_EFFECT = Shades.identifier("deconverge_shades");
+  public static final Identifier FLIP_SHADES_POST_EFFECT = Shades.identifier("flip_shades");
+  public static final Identifier NTSC_SHADES_POST_EFFECT = Shades.identifier("ntsc_shades");
+  public static final Identifier OUTLINE_SHADES_POST_EFFECT = Shades.identifier("outline_shades");
+  public static final Identifier SCAN_PINCUSHION_SHADES_POST_EFFECT = Shades.identifier("scan_pincushion_shades");
+  public static final Identifier SOBEL_SHADES_POST_EFFECT = Shades.identifier("sobel_shades");
+  public static final Identifier BITS_SHADES_POST_EFFECT = Shades.identifier("bits_shades");
+  public static final Identifier DESATURATE_SHADES_POST_EFFECT = Shades.identifier("desaturate_shades");
+  public static final Identifier GREEN_SHADES_POST_EFFECT = Shades.identifier("green_shades");
+  public static final Identifier BLOBS_SHADES_POST_EFFECT = Shades.identifier("blobs_shades");
+  public static final Identifier ANTIALIAS_SHADES_POST_EFFECT = Shades.identifier("antialias_shades");
+
   public static final Identifier BLUR_SHADES_POST_EFFECT = Shades.identifier("blur_shades");
   public static final Identifier NIGHT_VISION_SHADES_POST_EFFECT = Shades.identifier("night_vision_shades");
   public static final Identifier THERMAL_SHADES_POST_EFFECT = Shades.identifier("thermal_shades");
@@ -107,6 +130,8 @@ public class ShadesClient {
   public static final Identifier RADAR_SHADES_MARKER = Shades.identifier("radar_shades");
   public static final Identifier GRAVITY_SHADES_MARKER = Shades.identifier("gravity_shades");
   public static final Identifier LUNAR_SHADES_MARKER = Shades.identifier("lunar_shades");
+  public static final Identifier PHOSPHOR_SHADES_MARKER = Shades.identifier("phosphor_shades");
+  public static final Identifier WOBBLE_SHADES_MARKER = Shades.identifier("wobble_shades");
 
   /// one entry per prism_shades cycle position, in order; `item` is `null` only for the index-0
   /// "off" state. A single list instead of two parallel ones, so the id/displayName pairing can't
@@ -126,6 +151,26 @@ public class ShadesClient {
           new Effect(ModItems.CREEPER_SHADES, CREEPER_SHADES_POST_EFFECT, "Creeper"),
           new Effect(ModItems.INVERT_SHADES, INVERT_SHADES_POST_EFFECT, "Negative"),
           new Effect(ModItems.SPIDER_SHADES, SPIDER_SHADES_POST_EFFECT, "Spider"),
+          new Effect(ModItems.NOTCH_SHADES, NOTCH_SHADES_POST_EFFECT, "Notch"),
+          new Effect(ModItems.FXAA_SHADES, FXAA_SHADES_POST_EFFECT, "FXAA"),
+          new Effect(ModItems.ART_SHADES, ART_SHADES_POST_EFFECT, "Art"),
+          new Effect(ModItems.BUMPY_SHADES, BUMPY_SHADES_POST_EFFECT, "Bumpy"),
+          new Effect(ModItems.BLOBS2_SHADES, BLOBS2_SHADES_POST_EFFECT, "Blobs2"),
+          new Effect(ModItems.PENCIL_SHADES, PENCIL_SHADES_POST_EFFECT, "Pencil"),
+          new Effect(ModItems.COLOR_CONVOLVE_SHADES, COLOR_CONVOLVE_SHADES_POST_EFFECT, "Convolve"),
+          new Effect(ModItems.DECONVERGE_SHADES, DECONVERGE_SHADES_POST_EFFECT, "Deconverge"),
+          new Effect(ModItems.FLIP_SHADES, FLIP_SHADES_POST_EFFECT, "Flip"),
+          new Effect(ModItems.NTSC_SHADES, NTSC_SHADES_POST_EFFECT, "NTSC"),
+          new Effect(ModItems.OUTLINE_SHADES, OUTLINE_SHADES_POST_EFFECT, "Outline"),
+          new Effect(ModItems.PHOSPHOR_SHADES, PHOSPHOR_SHADES_MARKER, "Phosphor"),
+          new Effect(ModItems.SCAN_PINCUSHION_SHADES, SCAN_PINCUSHION_SHADES_POST_EFFECT, "Pincushion"),
+          new Effect(ModItems.SOBEL_SHADES, SOBEL_SHADES_POST_EFFECT, "Sobel"),
+          new Effect(ModItems.BITS_SHADES, BITS_SHADES_POST_EFFECT, "Bits"),
+          new Effect(ModItems.DESATURATE_SHADES, DESATURATE_SHADES_POST_EFFECT, "Desaturate"),
+          new Effect(ModItems.GREEN_SHADES, GREEN_SHADES_POST_EFFECT, "Green"),
+          new Effect(ModItems.WOBBLE_SHADES, WOBBLE_SHADES_MARKER, "Wobble"),
+          new Effect(ModItems.BLOBS_SHADES, BLOBS_SHADES_POST_EFFECT, "Blobs"),
+          new Effect(ModItems.ANTIALIAS_SHADES, ANTIALIAS_SHADES_POST_EFFECT, "Antialias"),
           new Effect(ModItems.BLUR_SHADES, BLUR_SHADES_POST_EFFECT, "Blurry"),
           new Effect(ModItems.NIGHT_VISION_SHADES, NIGHT_VISION_SHADES_POST_EFFECT, "Night Vision"),
           new Effect(ModItems.THERMAL_SHADES, THERMAL_SHADES_POST_EFFECT, "Thermal"),
@@ -295,7 +340,9 @@ public class ShadesClient {
           Map.entry(BIOME_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.BIOME, () -> null, ShadesClient::buildBiomeUniform, () -> null)),
           Map.entry(RADAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.RADAR, () -> null, ShadesClient::buildRadarUniform, () -> null)),
           Map.entry(GRAVITY_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.GRAVITY, () -> null, ShadesClient::buildGravityUniform, () -> null)),
-          Map.entry(LUNAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.LUNAR, () -> null, ShadesClient::buildLunarUniform, () -> null)));
+          Map.entry(LUNAR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.LUNAR, () -> null, ShadesClient::buildLunarUniform, () -> null)),
+          Map.entry(WOBBLE_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.WOBBLE, () -> null, null, () -> null)),
+          Map.entry(PHOSPHOR_SHADES_MARKER, new LiveEffect(ShadesRenderPipelines.PHOSPHOR, () -> null, null, ShadesClient::getPhosphorFeedback)));
     }
 
     return liveEffects;
@@ -336,6 +383,16 @@ public class ShadesClient {
   private static RenderTarget getWaveformFeedback() {
     waveformFeedback = ensureFeedbackTarget(waveformFeedback);
     return waveformFeedback;
+  }
+
+  /// persistent color-only feedback buffer holding phosphor_shades' previous (decayed) frame, for
+  /// its dragging motion trail; own field per SUMMARY.md's "don't share one buffer between
+  /// effects" note, same reasoning as waveformFeedback above
+  private static RenderTarget phosphorFeedback;
+
+  private static RenderTarget getPhosphorFeedback() {
+    phosphorFeedback = ensureFeedbackTarget(phosphorFeedback);
+    return phosphorFeedback;
   }
 
   /// (re)allocates a persistent color-only target sized to the main target, cleared to opaque

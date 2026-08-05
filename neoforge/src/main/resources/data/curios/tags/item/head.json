@@ -47,6 +47,26 @@
     "shades:radar_shades",
     "shades:gravity_shades",
     "shades:lunar_shades",
-    "shades:plasma_shades"
+    "shades:plasma_shades",
+    "shades:notch_shades",
+    "shades:fxaa_shades",
+    "shades:art_shades",
+    "shades:bumpy_shades",
+    "shades:blobs2_shades",
+    "shades:pencil_shades",
+    "shades:color_convolve_shades",
+    "shades:deconverge_shades",
+    "shades:flip_shades",
+    "shades:ntsc_shades",
+    "shades:outline_shades",
+    "shades:phosphor_shades",
+    "shades:scan_pincushion_shades",
+    "shades:sobel_shades",
+    "shades:bits_shades",
+    "shades:desaturate_shades",
+    "shades:green_shades",
+    "shades:wobble_shades",
+    "shades:blobs_shades",
+    "shades:antialias_shades"
   ]
 }

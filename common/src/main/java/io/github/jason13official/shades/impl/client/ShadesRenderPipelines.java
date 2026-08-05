@@ -318,4 +318,22 @@ public class ShadesRenderPipelines {
       .withSampler("InSampler")
       .withUniform("LunarConfig", UniformType.UNIFORM_BUFFER)
       .build();
+
+  /// hue-cycling screen wobble; needs live GameTime only, no custom uniform
+  public static final RenderPipeline WOBBLE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/wobble"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/wobble"))
+      .withSampler("InSampler")
+      .build();
+
+  /// keeps whichever's brighter between this frame and a decayed previous frame, for a dragging
+  /// motion trail; needs "PrevFrameSampler" alongside InSampler (see ShadesClient.getPhosphorFeedback)
+  public static final RenderPipeline PHOSPHOR = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+      .withLocation(Shades.identifier("pipeline/phosphor"))
+      .withVertexShader(SCREENQUAD_VERTEX_SHADER)
+      .withFragmentShader(Shades.identifier("core/phosphor"))
+      .withSampler("InSampler")
+      .withSampler("PrevFrameSampler")
+      .build();
 }
