@@ -37,4 +37,3 @@ as craftable glasses for modern MC :p otherwise nothing crazy! gotta stay focuse
 - https://www.shadertoy.com/view/fcK3zV
 - https://www.shadertoy.com/view/fcK3zK
 - https://www.shadertoy.com/view/7cGGRc minecwaf
-- 
