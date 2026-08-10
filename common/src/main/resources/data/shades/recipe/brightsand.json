@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:sand",
+    "minecraft:lapis_lazuli"
+  ],
+  "result": {
+    "id": "shades:brightsand"
+  }
+}

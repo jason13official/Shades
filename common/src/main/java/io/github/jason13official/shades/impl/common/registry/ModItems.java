@@ -6,18 +6,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.item.equipment.Equippable;
 
 public class ModItems {
+
+  public static Item BRIGHTSAND;
+  public static Item BRIGHTGLASS;
 
   public static Item BASIC_SHADES;
   public static Item CREEPER_SHADES;
@@ -89,6 +92,14 @@ public class ModItems {
   public static Item PLASMA_SHADES;
 
   public static void register(BiConsumer<Item, Identifier> consumer) {
+
+//    BRIGHTSAND = new BlockItem(ModBlocks.BRIGHTSAND, new Properties());
+//    BRIGHTSAND_GLASS = new BlockItem(ModBlocks.BRIGHTGLASS, new Properties());
+//    consumer.accept(BRIGHTSAND, Shades.identifier("brightsand"));
+//    consumer.accept(BRIGHTSAND, Shades.identifier("brightsand_glass"));
+
+    BRIGHTSAND = register("brightsand", p -> new BlockItem(ModBlocks.BRIGHTSAND, p), consumer);
+    BRIGHTGLASS = register("brightglass", p -> new BlockItem(ModBlocks.BRIGHTGLASS, p), consumer);
 
     BASIC_SHADES = registerShades("basic_shades", consumer);
     CREEPER_SHADES = registerShades("creeper_shades", consumer);

@@ -1,5 +1,12 @@
 {
   "itemGroup.shades": "Shades",
+
+  "block.shades.brightsand": "Brightsand",
+  "block.shades.brightglass": "Brightglass",
+
+  "item.shades.brightsand": "Brightsand",
+  "item.shades.brightglass": "Brightglass",
+
   "item.shades.basic_shades": "Basic Shades",
   "item.shades.creeper_shades": "Creeper Shades",
   "item.shades.invert_shades": "Negative Shades",

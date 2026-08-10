@@ -26,6 +26,8 @@ public class ModTabs {
   }
 
   public static void addItemsToTab(Consumer<ItemLike> consumer) {
+    consumer.accept(ModItems.BRIGHTSAND);
+    consumer.accept(ModItems.BRIGHTGLASS);
     ModItems.allShades().forEach(consumer);
   }
 }

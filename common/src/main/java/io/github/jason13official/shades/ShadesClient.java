@@ -392,8 +392,7 @@ public class ShadesClient {
   }
 
   /// persistent color-only feedback buffer holding phosphor_shades' previous (decayed) frame, for
-  /// its dragging motion trail; own field per SUMMARY.md's "don't share one buffer between
-  /// effects" note, same reasoning as waveformFeedback above
+  /// its dragging motion trail
   private static RenderTarget phosphorFeedback;
 
   private static RenderTarget getPhosphorFeedback() {
