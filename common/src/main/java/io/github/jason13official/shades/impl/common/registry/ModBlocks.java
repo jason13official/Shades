@@ -2,6 +2,7 @@ package io.github.jason13official.shades.impl.common.registry;
 
 import io.github.jason13official.shades.Shades;
 import io.github.jason13official.shades.impl.common.block.BrightsandBlock;
+import io.github.jason13official.shades.impl.common.block.SilimaticExposerBlock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import net.minecraft.core.BlockPos;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StainedGlassBlock;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
@@ -24,6 +26,8 @@ public class ModBlocks {
 
   public static Block BRIGHTSAND;
   public static Block BRIGHTGLASS;
+
+  public static Block SILIMATIC_EXPOSER;
 
   public static void register(BiConsumer<Block, Identifier> consumer) {
 
@@ -60,6 +64,8 @@ public class ModBlocks {
 //        consumer);
 
     BRIGHTGLASS = registerStainedGlass("brightglass", DyeColor.LIGHT_BLUE, consumer);
+
+    SILIMATIC_EXPOSER = register("silimatic_exposer", SilimaticExposerBlock::new, consumer);
   }
 
   /// @see Blocks
@@ -77,6 +83,10 @@ public class ModBlocks {
 
   private static Block register(String id, Properties properties, BiConsumer<Block, Identifier> consumer) {
     return register(id, Block::new, properties, consumer);
+  }
+
+  private static Block register(String id, Function<Properties, Block> constructor, BiConsumer<Block, Identifier> consumer) {
+    return register(id, constructor, Properties.of(), consumer);
   }
 
   private static Block register(String id, Function<Properties, Block> constructor, Properties properties, BiConsumer<Block, Identifier> consumer) {

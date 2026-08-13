@@ -21,6 +21,7 @@ public class ModItems {
 
   public static Item BRIGHTSAND;
   public static Item BRIGHTGLASS;
+  public static Item SILIMATIC_EXPOSER;
 
   public static Item BASIC_SHADES;
   public static Item CREEPER_SHADES;
@@ -100,6 +101,7 @@ public class ModItems {
 
     BRIGHTSAND = register("brightsand", p -> new BlockItem(ModBlocks.BRIGHTSAND, p), consumer);
     BRIGHTGLASS = register("brightglass", p -> new BlockItem(ModBlocks.BRIGHTGLASS, p), consumer);
+    SILIMATIC_EXPOSER = register("silimatic_exposer", p -> new BlockItem(ModBlocks.SILIMATIC_EXPOSER, p), consumer);
 
     BASIC_SHADES = registerShades("basic_shades", consumer);
     CREEPER_SHADES = registerShades("creeper_shades", consumer);
